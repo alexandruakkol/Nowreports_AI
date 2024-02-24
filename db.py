@@ -195,7 +195,7 @@ def batch_del_filingids(filing_ids):
 
 #ids_to_delete = ['1']  # Rep lace with actual IDs of your vectors
 
-#mv_query_by_filingid(28, ["source"]) # outputs to file all mv sources
+#mv_query_by_filingid(53, ["source"]) # outputs to file all mv sources
 #print(mv_pg_crosscheck_chunks(1408,147))
 #print(mv_delete_filingid(4))
 #print(mv_pg_crosscheck_chunks(4))
