@@ -1,5 +1,5 @@
 from ai import calc_embeddings, qa
-from db import mv_search_and_query, print_file, pg_get_injections
+from db import mv_search_and_query, print_file, pg_get_injections, mv_check_filingID
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 import json
@@ -121,6 +121,15 @@ def handle_completion():
         return Response(answer_question(messages, int(filingID)), mimetype='text/event-stream')
     except Exception as e:
         print(e)
-        return jsonify({'error': 'Invalid JSON data'}), 400
-
-
+        return jsonify({'error': 'Invalid JSON data'}), 500
+@app.route("/test", methods=["GET"]) # this endpoint tests this API and Milvus (not openAI)
+def handle_apitest():
+    try:
+        is_mv_check_ok = type(mv_check_filingID(4)[2].distance) is float
+        if is_mv_check_ok:
+            return '', 200
+        else:
+            return jsonify({'testing endpoint error': 'Vector DB check failed'}), 500
+    except Exception as e:
+        print('testing fault: ', e)
+        return jsonify({'testing endpoint error': 'Vector DB error'}), 500
