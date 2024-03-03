@@ -16,7 +16,7 @@ import time
 
 #SINGLE_REPORT_MODE = False //TODO this
 TIMER_SWITCH = True
-API_SERVER = 'http://localhost:8000/'
+API_SERVER = 'https://nowreports.com/api/'
 def debug_print_processed_texts(processed_texts):
     with open('queryresults.txt', 'w') as file:
         for paragraph in processed_texts:
