@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import pg8000.native
 import os
 import numpy as np
+import sys
 
 load_dotenv()
 
@@ -122,6 +123,10 @@ def mv_create_nowreports_collection():
   return collection
 
 def mv_check_filingID(filingID):
+  dir = f'test_vector_{EMBEDDING_SIZE}'
+
+  if('--wdir' in sys.argv): dir = '/home/alexandru/Desktop/nowreports_ai/' + dir
+
   array_from_file = np.loadtxt(f'test_vector_{EMBEDDING_SIZE}')
   res = mv_search_and_query([array_from_file], expr="filingID == " + str(filingID), limit=9999)[0]
   return res
