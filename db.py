@@ -7,6 +7,7 @@ import sys
 
 load_dotenv()
 
+
 connections.connect(
   alias=os.getenv('MVALIAS'),
   user=os.getenv('MVUSER'),
@@ -124,7 +125,6 @@ def mv_create_nowreports_collection():
 
 def mv_check_filingID(filingID):
   dir = f'test_vector_{EMBEDDING_SIZE}'
-
   if('--wdir' in sys.argv): dir = '/home/alexandru/Desktop/nowreports_ai/' + dir
 
   array_from_file = np.loadtxt(f'test_vector_{EMBEDDING_SIZE}')
