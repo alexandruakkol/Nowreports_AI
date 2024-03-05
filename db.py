@@ -45,7 +45,7 @@ def pg_pullToEmbed():
     from filings f
     join companies c on f.cik=c.cik
     where chunks is null and c.mcap is not null
-    order by c.mcap desc offset 100
+    order by c.mcap desc offset 200
   '''
   return sql.run(query)
 
@@ -54,7 +54,7 @@ def pg_update_chunks_nr(filingID, chunksNr):
   sql.run(sql_query, filingID=filingID, chunksNr=chunksNr)
 
 def pg_chunks_proc_inprogress(filingID):
-  sql_query = "UPDATE filings set chunks = -1 where id = :filingID"
+  sql_query = "UPDATE filings set chunks = -1, lastmodified=current_timestamp where id = :filingID"
   sql.run(sql_query, filingID=filingID)
 
 def pg_reset_chunks_nr(filingID):
