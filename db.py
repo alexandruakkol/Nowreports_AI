@@ -100,14 +100,14 @@ def mv_getCollections():
 def mv_select_all():
   # Retrieve the primary key field name
   primary_field = [field.name for field in collection.schema.fields if field.is_primary][0]
-  print(primary_field)
+  #print(primary_field)
   # Load the collection into memory for search
   collection.load()
 
   # Query to fetch all IDs (assuming primary field is "id")
   expr = f"{primary_field}"  # Update this query based on your data
   entities = collection.query(expr, output_fields=[primary_field])
-  print(entities)
+  #print(entities)
 
 def mv_drop_nowreports_collection():
     utility.drop_collection('nowreports')
@@ -161,7 +161,7 @@ MV_DEF_SEARCH_PARAMS = {"metric_type": "L2","params": {"nprobe": 32},
 }
 
 def mv_search_and_query(search_vectors, search_params=MV_DEF_SEARCH_PARAMS, expr='', limit=13):
-    print('-----limit', limit)
+    #print('-----limit', limit)
     collection.load()
     result = collection.search(search_vectors, "embeddings", search_params, limit=limit, output_fields=["source", "filingID"], expr=expr)
     return result

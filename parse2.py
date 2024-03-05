@@ -51,10 +51,10 @@ def parse_10k_filing(raw_10k):
 
    processed_items = []
 
-   print('=== starting to process ')
+   #print('=== starting to process ')
    bs_html = bs(document['10-K'], 'lxml')
    ee = processElements(bs_html.html, '1')
-   print('=== processing done')
+   #print('=== processing done')
    processed_items.extend(ee)
 
    os.system(f"afplay {SOUND_FILEPATH}")

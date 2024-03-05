@@ -46,7 +46,7 @@ def undupe_context_arr(context_arr):
 
 def preQueryProc(question, filingID):
     finterms = detect_financial_terms(question)
-    print('detected finterms: ', finterms)
+    #print('detected finterms: ', finterms)
     finterm_values = []
     for finterm in finterms:
         formula_elements = formulas[finterm].split(',')
@@ -54,7 +54,7 @@ def preQueryProc(question, filingID):
             question = f'How much is the {formula_element}.  (look in tables)'
             if 'ask the user' in question:
                 question = formula_element
-            print('---formula ', question)
+            #print('---formula ', question)
             finterm_value = get_similarities(question, filingID, 3)
             finterm_values.append(finterm_value)
     return [finterm_values, finterms]
@@ -63,7 +63,7 @@ def postQueryProc(postquery, finterms):
     for finterm in finterms:
         formula_text = terms_texts[finterm]
         postquery += f'. {formula_text} '
-    print('postquery ', postquery)
+    #print('postquery ', postquery)
     return postquery
 
 def get_similarities(question, filingID, limit=13):
@@ -73,13 +73,13 @@ def get_similarities(question, filingID, limit=13):
     #print('HITS:',hits) #TODO: eliminate unsure anwsers by distance
 
     if True: # debug for distance optimization
-        print('Distances ' + str(hits.distances))
+        #print('Distances ' + str(hits.distances))
 
     context_arr = [hit.entity.get('source') for hit in hits]
     print_file(context_arr)
     unduped_context_arr = undupe_context_arr(context_arr)
     logAnwsering(question, unduped_context_arr)
-    print('\n------anws', ', '.join(unduped_context_arr))
+    #print('\n------anws', ', '.join(unduped_context_arr))
     return ', '.join(unduped_context_arr)
 
 def answer_question(messages, filingID):
