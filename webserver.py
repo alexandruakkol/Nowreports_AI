@@ -72,7 +72,7 @@ def get_similarities(question, filingID, limit=13):
 
     #print('HITS:',hits) #TODO: eliminate unsure anwsers by distance
 
-    if True: # debug for distance optimization
+    #if True: # debug for distance optimization
         #print('Distances ' + str(hits.distances))
 
     context_arr = [hit.entity.get('source') for hit in hits]
