@@ -45,7 +45,7 @@ def pg_pullToEmbed():
     from filings f
     join companies c on f.cik=c.cik
     where chunks is null and c.mcap is not null
-    order by c.mcap desc offset 200
+    order by c.mcap desc --offset 200
   '''
   return sql.run(query)
 
@@ -153,7 +153,7 @@ def mv_query_by_filingid(filingid, output_fields=["source"], save_embedding=Fals
   print('Success! Output printed to queryresults.txt')
   return result
 
-MV_DEF_SEARCH_PARAMS = {"metric_type": "L2","params": {"nprobe": 32},
+MV_DEF_SEARCH_PARAMS = {"metric_type": "L2","params": {"nprobe": 1024, "nlist":1024},
         # search for vectors with a distance smaller than RADIUS
         "radius": 0.4,
         # filter out vectors with a distance smaller than or equal to RANGE_FILTER
