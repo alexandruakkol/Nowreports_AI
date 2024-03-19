@@ -34,6 +34,17 @@ sql = pg8000.native.Connection(user=usr, password=password, host=host, database=
 
 def print_file(txt, filename='printfile_out.txt', typ='w'):
   if not filename: filename='printfile_out.txt'
+
+  if isinstance(txt, list):
+    with open(filename, 'w'):
+      print()
+    with open(filename, 'a') as file:
+      for item in txt:
+        file.write('\n ===')
+        file.write(str(item))
+      print('Logged in ', filename)
+      return
+
   with open(filename, typ) as file:
     file.write('\n\n ===================================================')
     file.write(str(txt))
@@ -78,6 +89,10 @@ def pg_get_injections():
     obj["formulas"][code] = requirements
     obj["embedding_text"][code] = embedding_text
   return obj
+
+def pg_write_convo_summary(convoid, summary):
+  sql_query = "UPDATE conversations set summary= :summary where convoid= :convoid"
+  sql.run(sql_query, convoid=convoid, summary=summary)
 
 def mv_insert_data(entities):
   insert_result = collection.insert(entities)
@@ -197,6 +212,7 @@ def batch_del_filingids(filing_ids):
   for filing_id in filing_ids:
     mv_delete_filingid(filing_id)
   print('batch_delete done')
+
 
 #ids_to_delete = ['1']  # Rep lace with actual IDs of your vectors
 

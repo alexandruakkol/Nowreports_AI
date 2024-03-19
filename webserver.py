@@ -23,7 +23,7 @@ def detect_financial_terms(sentence):
     return terms_found
 
 def logAnwsering(question, context):
-    with open('anws.log', 'w') as logfile:
+    with open('query_results.log', 'w') as logfile:
         logfile.write('\n\n/////////////////////////////////////// Question: ' + question)
         for ix, el in enumerate(context):
             logfile.write('\n CC' + str(ix) + ' =============== ' + el)
@@ -76,7 +76,6 @@ def get_similarities(question, filingID, limit=13):
         #print('Distances ' + str(hits.distances))
 
     context_arr = [hit.entity.get('source') for hit in hits]
-    print_file(context_arr)
     unduped_context_arr = undupe_context_arr(context_arr)
     logAnwsering(question, unduped_context_arr)
     #print('\n------anws', ', '.join(unduped_context_arr))
@@ -114,14 +113,16 @@ def handle_completion():
 
     try:
         data = request.get_json()
-        messages = json.loads(data.get('messages')) # this should also include prev convos
+        messages = json.loads(data.get('messages')) # this includes gross prev convos
         filingID = data.get('filingID')
-        # TODO: use opensource AI summarization model for appending prev convos #
 
-        return Response(answer_question(messages, int(filingID)), mimetype='text/event-stream')
+        answer = answer_question(messages, int(filingID))
+
+        return Response(answer, mimetype='text/event-stream')
     except Exception as e:
         print(e)
         return jsonify({'error': 'Invalid JSON data'}), 500
+
 @app.route("/test", methods=["GET"]) # this endpoint tests this API and Milvus (not openAI)
 def handle_apitest():
     try:

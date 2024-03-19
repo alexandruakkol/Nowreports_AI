@@ -25,7 +25,7 @@ def calc_embeddings(data):
     return model.encode([data, instruction], convert_to_tensor=False)
 
 def qa(messages):
-    SYSTEM_PROMPT = {"role": "system", "content": 'You are an AI tool called NowReports that briefly answers user questions based on a financial report. You are given the context from that document. The user is a potential investor in the company. Briefly summarize and explain the info that you get. Try to structure all of your responses. The user is referring to the domain of finance and business, and to the financial document that is currently given in your context. Do not give long answers if not asked to. Never generate tags like [CONTEXT] or [AI] into your response. If asked to calculate something, look into the report for the necessary data and always do the calculation yourself. '''}
+    SYSTEM_PROMPT = {"role": "system", "content": 'You are an AI tool called NowReports that answers user questions accurately, based on data from a financial report. The user is a potential investor in the company, give him the important information that he would want to know before buying it. Structure your responses into brief, easy to understand points or line breaks. Do not give long answers if not asked to. Never generate tags like [CONTEXT] or [AI] into your response. If asked for a financial metric, or to calculate something, use chain of thought: first find the formula, secondly look into the report for all the necessary data, and then perform the calculation yourself, until you get to the result. '''}
     messages.insert(0, SYSTEM_PROMPT)
 
     if True: # actual prompt logging
@@ -37,8 +37,9 @@ def qa(messages):
         messages=messages,
         max_tokens=300,
         stream=True,
-        frequency_penalty=0.5,
-        presence_penalty=0.5
+        temperature=0.3
+        # frequency_penalty=0.5,
+        # presence_penalty=0.5
     )
     for message in stream:
         yield message.choices[0].delta.content
