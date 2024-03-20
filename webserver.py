@@ -1,4 +1,4 @@
-from ai import calc_embeddings, qa
+from ai import calc_embeddings, qa_mixtral
 from db import mv_search_and_query, print_file, pg_get_injections, mv_check_filingID
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
@@ -23,7 +23,7 @@ def detect_financial_terms(sentence):
     return terms_found
 
 def logAnwsering(question, context):
-    with open('query_results.log', 'w') as logfile:
+    with open('query_results.log', 'a') as logfile:
         logfile.write('\n\n/////////////////////////////////////// Question: ' + question)
         for ix, el in enumerate(context):
             logfile.write('\n CC' + str(ix) + ' =============== ' + el)
@@ -51,7 +51,7 @@ def preQueryProc(question, filingID):
     for finterm in finterms:
         formula_elements = formulas[finterm].split(',')
         for formula_element in formula_elements:
-            question = f'How much is the {formula_element}.  (look in tables)'
+            question = f'How much is the {formula_element}?  (data is in tables)'
             if 'ask the user' in question:
                 question = formula_element
             #print('---formula ', question)
@@ -97,9 +97,11 @@ def answer_question(messages, filingID):
         context += f' {finterm_value} '
     context = postQueryProc(context, finterms)
     messages[-1]["content"] = messages[-1]["content"] + ' [CONTEXT]: ' + context
-    for stream_msgs in qa(messages):
+    for stream_msgs in qa_mixtral(messages):
         if stream_msgs and len(stream_msgs) > 0:
-            yield f"{stream_msgs}\n\n".encode('utf-8')
+            if False:
+                print(f"{stream_msgs}".encode('utf-8'))
+            yield f"{stream_msgs}[ss]".encode('utf-8')
 
 
 app = Flask(__name__)

@@ -5,16 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e887b4ef-6a6b-40a8-bf0b-6acf2692add4" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/summarizer.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/system_prompt.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/actual_prompt.txt" beforeDir="false" afterPath="$PROJECT_DIR$/actual_prompt.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ai.py" beforeDir="false" afterPath="$PROJECT_DIR$/ai.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anws.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/db.py" beforeDir="false" afterPath="$PROJECT_DIR$/db.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/instructor-embedding" beforeDir="false" afterPath="$PROJECT_DIR$/instructor-embedding" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/instructor-embedding/examples/faiss/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/instructor-embedding/examples/faiss/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/printfile_out.txt" beforeDir="false" afterPath="$PROJECT_DIR$/printfile_out.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/queryresults.txt" beforeDir="false" afterPath="$PROJECT_DIR$/queryresults.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/query_results.log" beforeDir="false" afterPath="$PROJECT_DIR$/query_results.log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/webserver.py" beforeDir="false" afterPath="$PROJECT_DIR$/webserver.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
