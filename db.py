@@ -7,7 +7,6 @@ import sys
 
 load_dotenv()
 
-
 connections.connect(
   alias=os.getenv('MVALIAS'),
   user=os.getenv('MVUSER'),
@@ -19,7 +18,9 @@ connections.connect(
 print("Connection to Milvus established successfully.")
 
 try:
-  collection = Collection('nowreports')
+  collection = Collection('test') # nowreports | test
+  EMBEDDING_SIZE = 384            # 768 | test_embedding_size 384
+  collection.load()
 except:
   print('Error in getting to collection: nowreports')
 
@@ -27,8 +28,6 @@ host = os.getenv("PGHOST")
 database = os.getenv("PGDATABASE")
 usr = os.getenv("PGUSER")
 password = os.getenv("PGPASSWORD")
-
-EMBEDDING_SIZE = 768
 
 sql = pg8000.native.Connection(user=usr, password=password, host=host, database=database)
 
@@ -105,7 +104,7 @@ def mv_create_collection(name, fields, description):
   collection = Collection(name, schema, consistency_level="Strong")
   return collection
 
-def mv_create_index(collection, field_name, index_type, metric_type, params):
+def mv_create_index(collection, field_name, index_type, metric_type, params={}):
   index = {"index_type": index_type, "metric_type": metric_type, "params": params}
   collection.create_index(field_name, index)
 
@@ -124,8 +123,8 @@ def mv_select_all():
   entities = collection.query(expr, output_fields=[primary_field])
   #print(entities)
 
-def mv_drop_nowreports_collection():
-    utility.drop_collection('nowreports')
+def mv_drop_collection(name):
+  utility.drop_collection(name)
 
 def mv_create_nowreports_collection():
   fields = [
@@ -135,6 +134,24 @@ def mv_create_nowreports_collection():
     FieldSchema(name="embeddings", dtype=DataType.FLOAT_VECTOR, dim=EMBEDDING_SIZE)
   ]
   collection = mv_create_collection("nowreports", fields, "nowreports collection")
+  print('Collection created: ', collection)
+  return collection
+
+def mv_create_test_collection():
+  from pymilvus.model.hybrid import BGEM3EmbeddingFunction
+
+  ef = BGEM3EmbeddingFunction(use_fp16=False, device="cpu")
+  dense_dim = ef.dim["dense"]
+
+  fields = [
+    FieldSchema(name="pk", dtype=DataType.VARCHAR, is_primary=True, auto_id=False, max_length=100),
+    FieldSchema(name="filingID", dtype=DataType.INT64),
+    FieldSchema(name="source", dtype=DataType.VARCHAR, max_length=65535),
+    FieldSchema(name="sparse_vector", dtype=DataType.SPARSE_FLOAT_VECTOR),
+    FieldSchema(name="dense_vector", dtype=DataType.FLOAT_VECTOR,
+                dim=dense_dim)
+  ]
+  collection = mv_create_collection("test", fields, "testing collection")
   print('Collection created: ', collection)
   return collection
 
@@ -168,15 +185,16 @@ def mv_query_by_filingid(filingid, output_fields=["source"], save_embedding=Fals
   print('Success! Output printed to queryresults.txt')
   return result
 
-MV_DEF_SEARCH_PARAMS = {"metric_type": "L2","params": {"nprobe": 1024, "nlist":1024},
+#TODO: change
+MV_DEF_SEARCH_PARAMS = {"metric_type": "COSINE","params": {"nprobe": 1024, "nlist":1024},
         # search for vectors with a distance smaller than RADIUS
-        "radius": 0.4,
-        # filter out vectors with a distance smaller than or equal to RANGE_FILTER
-        "range_filter" : 0.32
+        # "radius": 0.4,
+        # # filter out vectors with a distance smaller than or equal to RANGE_FILTER
+        # "range_filter" : 0.32
 }
 
 def mv_search_and_query(search_vectors, search_params=MV_DEF_SEARCH_PARAMS, expr='', limit=13):
-    #print('-----limit', limit)
+    print('-----limit', limit)
     collection.load()
     result = collection.search(search_vectors, "embeddings", search_params, limit=limit, output_fields=["source", "filingID"], expr=expr)
     return result
@@ -197,7 +215,7 @@ def mv_get_max_id(filingID):
 ################################################## LEVEL 2 #################################################
 
 def mv_reset_collection():
-  mv_drop_nowreports_collection()
+  mv_drop_collection('nowreports')
   collection = mv_create_nowreports_collection()
   mv_create_index(collection, "embeddings", "IVF_FLAT", "L2", {"nlist": 128})
 
@@ -213,10 +231,16 @@ def batch_del_filingids(filing_ids):
     mv_delete_filingid(filing_id)
   print('batch_delete done')
 
+def mv_reset_test_collection():
+  mv_drop_collection('test')
+  mv_create_test_collection()
+  mv_create_index(collection, "sparse_vector", "SPARSE_INVERTED_INDEX", "IP")
+  mv_create_index(collection, "dense_vector", "FLAT", "L2")
+  collection.load()
 
+
+#mv_query_by_filingid(4, ["source"]) # outputs to file all mv sources
 #ids_to_delete = ['1']  # Rep lace with actual IDs of your vectors
-
-#mv_query_by_filingid(53, ["source"]) # outputs to file all mv sources
 #print(mv_pg_crosscheck_chunks(1408,147))
 #print(mv_delete_filingid(4))
 #print(mv_pg_crosscheck_chunks(4))
@@ -224,4 +248,6 @@ def batch_del_filingids(filing_ids):
 #print(mv_pg_crosscheck_chunks(1528,99))
 #mv_reset_collection()
 #batch_del_filingids([1528,5,6,7,8,9,10,11,12,33,34,35,36,13,14,15,16,17,18,19,20,21,22,23,24])
+
+mv_reset_test_collection();
 

@@ -76,7 +76,8 @@ def get_similarities(question, filingID, limit=13):
         #print('Distances ' + str(hits.distances))
 
     context_arr = [hit.entity.get('source') for hit in hits]
-    unduped_context_arr = undupe_context_arr(context_arr)
+    #unduped_context_arr = undupe_context_arr(context_arr)
+    unduped_context_arr = context_arr
     logAnwsering(question, unduped_context_arr)
     #print('\n------anws', ', '.join(unduped_context_arr))
     return ', '.join(unduped_context_arr)
@@ -90,7 +91,7 @@ def answer_question(messages, filingID):
     if len(finterms) > 0:
         limit = 3
         finterm_values.append(' Use these figures to calculate the metric the user is asking for.')
-    else: limit = 13
+    else: limit = 11 #if too large, does not fit into context size
 
     context = get_similarities(question, filingID, limit)
     for finterm_value in finterm_values:

@@ -6,6 +6,8 @@ from db import print_file
 from mistralai.client import MistralClient
 from mistralai.models.chat_completion import ChatMessage
 import os
+from sentence_transformers import SentenceTransformer
+
 
 api_key = os.environ["MISTRAL_API_KEY"]
 mistral_model = "open-mixtral-8x7b"
@@ -30,7 +32,7 @@ def qa_mixtral(json_messages):
         model=mistral_model,
         messages=messages,
         temperature=0.25,
-        max_tokens = 700
+        max_tokens=700
     )
 
     for message in chat_response:
@@ -42,16 +44,16 @@ def qa_mixtral(json_messages):
     #print(chat_response.choices[0].message.content)
 
 
-model = INSTRUCTOR('hkunlp/instructor-large')
-instruction = "Represent the financial report section for retrieving supporting sections: "
-tokenizer = AutoTokenizer.from_pretrained('hkunlp/instructor-large')
+# model = INSTRUCTOR('hkunlp/instructor-large')
+# instruction = "Represent the financial report section for retrieving supporting sections: "
+tokenizer = AutoTokenizer.from_pretrained('alexakkol/BAAI-bge-base-en-nowr-1-2')
 
 #for GPT tokenization
 openai_tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 
 load_dotenv()
 llm_client = OpenAI()
-#model = SentenceTransformer('thenlper/gte-large')
+model = SentenceTransformer('alexakkol/BAAI-bge-base-en-nowr-1-2')
 
 # thenlper/gte-large is the best of all these
 # nickmuchi/setfit-finetuned-financial-text-classification meh, didnt work with apple. is also old
@@ -60,7 +62,7 @@ llm_client = OpenAI()
 # M2 bert 80M no RAM
 
 def calc_embeddings(data):
-    return model.encode([data, instruction], convert_to_tensor=False)
+    return model.encode([data], normalize_embeddings=True)
 
 def qa(messages):
     messages.insert(0, SYSTEM_PROMPT)

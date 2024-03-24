@@ -1,23 +1,18 @@
 #!/usr/bin/env python
 import re
 from bs4 import BeautifulSoup as bs, Tag
-import os
 from table_interpret import process_tables
 
 WINDOWS = {
    0: {
-       "CHUNKSIZE": 128,
-       "SPLITPOINT": 256
+       "CHUNKSIZE": 512,
+       "SPLITPOINT": 1024
    },
    1: {
        "CHUNKSIZE": 1536,
        "SPLITPOINT": 1024
    }
 }
-
-
-SOUND_FILEPATH = 'ding.mp3'
-
 
 def parse_10k_filing(raw_10k):
    doc_start_pattern = re.compile(r'<DOCUMENT>')
@@ -43,7 +38,7 @@ def parse_10k_filing(raw_10k):
                remove_attributes(child)
        return soup_element
 
-   def processElements(elem, typ):
+   def processElements(elem):
        if not hasattr(elem ,'body'): return []
        processed_elements = process_tables(str(elem.body))
 
@@ -53,11 +48,9 @@ def parse_10k_filing(raw_10k):
 
    #print('=== starting to process ')
    bs_html = bs(document['10-K'], 'lxml')
-   ee = processElements(bs_html.html, '1')
+   ee = processElements(bs_html.html)
    #print('=== processing done')
    processed_items.extend(ee)
-
-   os.system(f"afplay {SOUND_FILEPATH}")
 
    # flatten
    processed_texts = processed_items
