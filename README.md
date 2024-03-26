@@ -4,7 +4,7 @@ Built with Python, Milvus, and Postgres.
 
 ## Main Functions
 
-- Flask web server for nowreports.com.
+- Flask web server for nowreports.com (deployed in production using Gunicorn).
 - 10-K financial report processing for AI ingestion (parse2.py):
   - Data cleanup and preprocessing.
   - Primary chunking for NLP tagging as one of: NarrativeText, Title, or Table (they go into different processing flows).
