@@ -6,27 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="e887b4ef-6a6b-40a8-bf0b-6acf2692add4" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.ipynb_checkpoints/Untitled-checkpoint.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.python-version" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Untitled.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/actual_prompt.txt" beforeDir="false" afterPath="$PROJECT_DIR$/logs/actual_prompt.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db.py" beforeDir="false" afterPath="$PROJECT_DIR$/db.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/instructor-embedding" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/out.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/printfile_out.txt" beforeDir="false" afterPath="$PROJECT_DIR$/logs/printfile_out.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/query_results.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/query_results.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/queryresults.txt" beforeDir="false" afterPath="$PROJECT_DIR$/logs/queryresults.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/queryresults2.txt" beforeDir="false" afterPath="$PROJECT_DIR$/logs/queryresults2.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/split.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/table_explain.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/table_format.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tables.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test_vector_1024" beforeDir="false" afterPath="$PROJECT_DIR$/test_data/test_vector_1024" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test_vector_384" beforeDir="false" afterPath="$PROJECT_DIR$/test_data/test_vector_384" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test_vector_768" beforeDir="false" afterPath="$PROJECT_DIR$/test_data/test_vector_768" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/webserver.py" beforeDir="false" afterPath="$PROJECT_DIR$/webserver.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
