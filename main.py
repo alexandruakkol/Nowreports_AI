@@ -20,7 +20,7 @@ API_SERVER = 'https://nowreports.com/api/'
 TEST_MODE = True # clears test collection and only pulls AAPL. for testing only!
 
 def debug_print_processed_texts(processed_texts):
-    with open('queryresults.txt', 'w') as file:
+    with open('logs/queryresults.txt', 'w') as file:
         for paragraph in processed_texts:
             file.write('\n\n ===================================================')
             file.write(paragraph)

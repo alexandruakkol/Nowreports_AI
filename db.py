@@ -33,6 +33,7 @@ sql = pg8000.native.Connection(user=usr, password=password, host=host, database=
 
 def print_file(txt, filename='printfile_out.txt', typ='w'):
   if not filename: filename='printfile_out.txt'
+  filename = 'logs/' + filename
 
   if isinstance(txt, list):
     with open(filename, 'w'):
@@ -156,10 +157,10 @@ def mv_create_test_collection():
   return collection
 
 def mv_check_filingID(filingID):
-  dir = f'test_vector_{EMBEDDING_SIZE}'
+  dir = f'test_data/test_vector_{EMBEDDING_SIZE}'
   if('--wdir' in sys.argv): dir = '/home/alexandru/Desktop/nowreports_ai/' + dir
 
-  array_from_file = np.loadtxt(f'test_vector_{EMBEDDING_SIZE}')
+  array_from_file = np.loadtxt(f'test_data/test_vector_{EMBEDDING_SIZE}')
   res = mv_search_and_query([array_from_file], expr="filingID == " + str(filingID), limit=9999)[0]
   return res
   #print('Found ' + str(len(res))+ ' entries.')
@@ -172,7 +173,7 @@ def mv_query_by_filingid(filingid, output_fields=["source"], save_embedding=Fals
   collection.load()
   query = 'filingID == ' + str(filingid)
   result = collection.query(query, output_fields=output_fields)
-  with open('queryresults.txt', 'w') as file:
+  with open('logs/queryresults.txt', 'w') as file:
     for obj in result:
       file.write('\n===========================================================')
       file.write(str(obj["source"]))
@@ -180,7 +181,7 @@ def mv_query_by_filingid(filingid, output_fields=["source"], save_embedding=Fals
     print('mv_query_by_filingid error: No embedding found for id')
     return
   if save_embedding:
-    np.savetxt('test_vector_' + str(EMBEDDING_SIZE), result[0]["embeddings"])
+    np.savetxt('test_data/test_vector_' + str(EMBEDDING_SIZE), result[0]["embeddings"])
 
   print('Success! Output printed to queryresults.txt')
   return result

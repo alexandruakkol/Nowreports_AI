@@ -23,7 +23,7 @@ def detect_financial_terms(sentence):
     return terms_found
 
 def logAnwsering(question, context):
-    with open('query_results.log', 'a') as logfile:
+    with open('logs/query_results.log', 'a') as logfile:
         logfile.write('\n\n/////////////////////////////////////// Question: ' + question)
         for ix, el in enumerate(context):
             logfile.write('\n CC' + str(ix) + ' =============== ' + el)
