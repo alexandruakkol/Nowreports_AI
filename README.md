@@ -8,10 +8,10 @@ The AI module was built with Python, Milvus, and Postgres.
 
 ## Main Functions
 
-- Flask web server for nowreports.com (deployed in production using Gunicorn).
+- Web server for nowreports.com, built with Flask. Deployed in production using Gunicorn.
 - 10-K financial report processing for AI ingestion (parse2.py):
   - Data cleanup and preprocessing.
-  - Primary chunking for NLP tagging as one of: NarrativeText, Title, or Table (they go into different processing flows).
+  - Initial chunking and NLP tagging each chunk as one of: NarrativeText, Title, or Table (they go into different processing flows).
   - Secondary chunking via sliding window method with 30% overlap. Extra processing for duplicate data removal (chunks with fuzzy match over 98% are removed).
   - Labelling of each chunk with its Title component.
   - Embedding calculation for retrieval on runtime.
