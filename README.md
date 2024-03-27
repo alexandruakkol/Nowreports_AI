@@ -1,4 +1,4 @@
-# Nowreports AI Component
+# Nowreports AI Module
 
 Built with Python, Milvus, and Postgres.
 
