@@ -31,3 +31,6 @@ Built with Python, Milvus, and Postgres.
 ## Work in Progress
 
 Hybrid retrieval and switch to a finetuned bge-m3 embedding model.
+
+Availability and performance of the webserver, Milvus vector database (on Docker) and API module are being monitored by Uptime Robot.
+
