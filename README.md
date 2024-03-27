@@ -19,7 +19,7 @@ The AI module was built with Python, Milvus, and Postgres.
   - DB sync check (number of chunks written, Postgres and Milvus).
 
 The availability and performance of the webserver, Milvus vector database (on Docker) and API module are being monitored by Uptime Robot through the testing endpoints.
-
+ 
 ## Models Used
 
 - Mixtral 8x7b as the client-facing question-answering LLM. Runs via Mixtral AI API.
