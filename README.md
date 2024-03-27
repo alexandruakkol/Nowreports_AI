@@ -18,7 +18,7 @@ The AI module was built with Python, Milvus, and Postgres.
 - Cross-checker (automated testing):
   - DB sync check (number of chunks written, Postgres and Milvus).
 
-Availability and performance of the webserver, Milvus vector database (on Docker) and API module are being monitored by Uptime Robot through the testing endpoints.
+The availability and performance of the webserver, Milvus vector database (on Docker) and API module are being monitored by Uptime Robot through the testing endpoints.
 
 ## Models Used
 
@@ -36,5 +36,5 @@ Availability and performance of the webserver, Milvus vector database (on Docker
 
 ## Work in Progress
 
-Hybrid retrieval and switch to a finetuned bge-m3 embedding model.
+Hybrid retrieval and switch to a finetuned bge-m3 embedding model are in the testing phase. Large improvements in AI performance are on their way.
 
