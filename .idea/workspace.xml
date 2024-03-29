@@ -6,16 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="e887b4ef-6a6b-40a8-bf0b-6acf2692add4" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ai.py" beforeDir="false" afterPath="$PROJECT_DIR$/ai.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db.py" beforeDir="false" afterPath="$PROJECT_DIR$/db.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hybrid_retrieval.py" beforeDir="false" afterPath="$PROJECT_DIR$/hybrid_retrieval.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logs/actual_prompt.txt" beforeDir="false" afterPath="$PROJECT_DIR$/logs/actual_prompt.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logs/query_results.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/query_results.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/logs/queryresults.txt" beforeDir="false" afterPath="$PROJECT_DIR$/logs/queryresults.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/parse2.py" beforeDir="false" afterPath="$PROJECT_DIR$/parse2.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/table_interpret.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/webserver.py" beforeDir="false" afterPath="$PROJECT_DIR$/webserver.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
