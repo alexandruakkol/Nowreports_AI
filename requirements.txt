@@ -71,7 +71,7 @@ pycparser==2.21
 pycryptodome==3.20.0
 pydantic==2.6.1
 pydantic_core==2.16.2
-pymilvus==2.3.6
+pymilvus==2.4.0
 python-dateutil==2.8.2
 python-dotenv==1.0.1
 python-iso639==2024.1.2
