@@ -61,34 +61,33 @@ docs_embeddings = ef(docs)
 query_embeddings = ef([query])
 
 # 2. setup Milvus collection and index
-# connections.connect("default", host="localhost", port="19530")
+connections.connect("default", host="localhost", port="19530")
 
-# # Specify the data schema for the new Collection.
-# fields = [
-#     # Use auto generated id as primary key
-#     FieldSchema(name="pk", dtype=DataType.VARCHAR,
-#                 is_primary=True, auto_id=True, max_length=100),
-#     # Store the original text to retrieve based on semantically distance
-#     FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=512),
-#     # Milvus now supports both sparse and dense vectors, we can store each in
-#     # a separate field to conduct hybrid search on both vectors.
-#     FieldSchema(name="sparse_vector", dtype=DataType.SPARSE_FLOAT_VECTOR),
-#     FieldSchema(name="dense_vector", dtype=DataType.FLOAT_VECTOR,
-#                 dim=dense_dim),
-# ]
-#
-# schema = CollectionSchema(fields, "")
-# col_name = 'hybrid_demo'
-# # Now we can create the new collection with above name and schema.
-# col = Collection(col_name, schema, consistency_level="Strong")
+# Specify the data schema for the new Collection.
+fields = [
+    # Use auto generated id as primary key
+    FieldSchema(name="pk", dtype=DataType.VARCHAR,
+                is_primary=True, auto_id=True, max_length=100),
+    # Store the original text to retrieve based on semantically distance
+    FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=512),
+    # Milvus now supports both sparse and dense vectors, we can store each in
+    # a separate field to conduct hybrid search on both vectors.
+    FieldSchema(name="sparse_vector", dtype=DataType.SPARSE_FLOAT_VECTOR),
+    FieldSchema(name="dense_vector", dtype=DataType.FLOAT_VECTOR,
+                dim=dense_dim),
+]
+schema = CollectionSchema(fields, "")
+col_name = 'hybrid_demo'
+# Now we can create the new collection with above name and schema.
+col = Collection(col_name, schema, consistency_level="Strong")
 
 # We need to create indices for the vector fields. The indices will be loaded
 # into memory for efficient search.
-# sparse_index = {"index_type": "SPARSE_INVERTED_INDEX", "metric_type": "IP"}
-# col.create_index("sparse_vector", sparse_index)
-# dense_index = {"index_type": "FLAT", "metric_type": "L2"}
-# col.create_index("dense_vector", dense_index)
-# col.load()
+sparse_index = {"index_type": "SPARSE_INVERTED_INDEX", "metric_type": "IP"}
+col.create_index("sparse_vector", sparse_index)
+dense_index = {"index_type": "FLAT", "metric_type": "L2"}
+col.create_index("dense_vector", dense_index)
+col.load()
 
 # 3. insert text and sparse/dense vector representations into the collection
 entities = [docs, docs_embeddings["sparse"], docs_embeddings["dense"]]

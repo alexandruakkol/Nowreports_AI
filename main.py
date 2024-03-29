@@ -17,7 +17,7 @@ import os
 #SINGLE_REPORT_MODE = False //TODO this
 TIMER_SWITCH = True
 API_SERVER = 'https://nowreports.com/api/'
-TEST_MODE = True # clears test collection and only pulls AAPL. for testing only!
+TEST_MODE = False # clears test collection and only pulls AAPL. for testing only!
 
 def debug_print_processed_texts(processed_texts):
     with open('logs/queryresults.txt', 'w') as file:
@@ -75,17 +75,11 @@ def embedding(toEmbed):
 
         print('---- Parsing OK ' + filing_id_str)
         filingIDs = []
-        embeddings = []
-        counters = []
 
-        for ix, paragraph in enumerate(processed_texts):
-            tensor = calc_embeddings(paragraph)[0]
-            embeddings.append(tensor)
-            if False: #check embed tensor length
-                print('TENSOR LENGTH: ', len(tensor))
-            counters.append(str(ix))
+        embeddings = calc_embeddings(processed_texts)
+
+        for _ in enumerate(processed_texts):
             filingIDs.append(filing_id)
-        print('inserting filingID: ' + str(filing_id))
 
         # update chunk no to DB
         try:
@@ -99,20 +93,21 @@ def embedding(toEmbed):
 
         # dd = mv_insert_data([counters, filingIDs, processed_texts[:4], embeddings])
         try:
-            mv_insert_data([counters, filingIDs, processed_texts, embeddings])
+            print('inserting filingID into vectorDB: ' + str(filing_id))
+            mv_insert_data([filingIDs, processed_texts, embeddings["sparse"], embeddings["dense"]])
         except Exception as e:
             print('Error inserting filingID ' + str(filing_id) + ' into vector DB.', e)
             erase_rollback_insert(filing_id)
             continue
 
         # crosscheck
-        crosscheck = mv_pg_crosscheck_chunks(filing_id, processed_texts_no)
-        if not crosscheck["ok"]:
-            print("Chunk count crosscheck failed (mv/pg). -------- (NOT) REVERTING --------:", crosscheck)
-            # erase_rollback_insert(filing_id)
-            continue
-        else:
-            print('-Crosscheck OK')
+        #crosscheck = mv_pg_crosscheck_chunks(filing_id, processed_texts_no)
+        # if not crosscheck["ok"]:
+        #     print("Chunk count crosscheck failed (mv/pg). -------- (NOT) REVERTING --------:", crosscheck)
+        #     # erase_rollback_insert(filing_id)
+        #     continue
+        # else:
+        #     print('-Crosscheck OK')
 
         pg_update_modified(filing_id)
         if TIMER_SWITCH: toc = time.perf_counter()
@@ -125,6 +120,7 @@ def embedding(toEmbed):
 
 def start_regular_pull():
     toEmbed = pg_pullToEmbed()
+    print(toEmbed)
     embedding(toEmbed)
 
 def start_test_pull():

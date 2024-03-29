@@ -1,4 +1,4 @@
-from pymilvus import Collection, connections, utility, FieldSchema, DataType, CollectionSchema
+from pymilvus import Collection, connections, utility, FieldSchema, DataType, CollectionSchema, AnnSearchRequest, RRFRanker, MilvusClient
 from dotenv import load_dotenv
 import pg8000.native
 import os
@@ -18,12 +18,13 @@ connections.connect(
 print("Connection to Milvus established successfully.")
 
 try:
-  collection = Collection('test') # nowreports | test
-  EMBEDDING_SIZE = 384            # 768 | test_embedding_size 384
+  collection = Collection('nowreports_bge') # nowreports | test
   collection.load()
-except:
-  print('Error in getting to collection: nowreports')
+except Exception as e:
+  print(e)
+  print('Error in getting to collection')
 
+EMBEDDING_SIZE = 384            # 768 | test_embedding_size 384
 host = os.getenv("PGHOST")
 database = os.getenv("PGDATABASE")
 usr = os.getenv("PGUSER")
@@ -63,6 +64,7 @@ def pg_pullToEmbed():
 def pg_update_chunks_nr(filingID, chunksNr):
   sql_query = "UPDATE filings set chunks = :chunksNr where id = :filingID"
   sql.run(sql_query, filingID=filingID, chunksNr=chunksNr)
+  print('pg update done')
 
 def pg_chunks_proc_inprogress(filingID):
   sql_query = "UPDATE filings set chunks = -1, lastmodified=current_timestamp where id = :filingID"
@@ -128,13 +130,20 @@ def mv_drop_collection(name):
   utility.drop_collection(name)
 
 def mv_create_nowreports_collection():
+  from pymilvus.model.hybrid import BGEM3EmbeddingFunction
+
+  ef = BGEM3EmbeddingFunction(use_fp16=False, device="cpu")
+  dense_dim = ef.dim["dense"]
+
   fields = [
-    FieldSchema(name="pk", dtype=DataType.VARCHAR, is_primary=True, auto_id=False, max_length=100),
+    FieldSchema(name="pk", dtype=DataType.VARCHAR, is_primary=True, auto_id=True, max_length=100),
     FieldSchema(name="filingID", dtype=DataType.INT64),
     FieldSchema(name="source", dtype=DataType.VARCHAR, max_length=65535),
-    FieldSchema(name="embeddings", dtype=DataType.FLOAT_VECTOR, dim=EMBEDDING_SIZE)
+    FieldSchema(name="sparse_vector", dtype=DataType.SPARSE_FLOAT_VECTOR),
+    FieldSchema(name="dense_vector", dtype=DataType.FLOAT_VECTOR,
+                dim=dense_dim)
   ]
-  collection = mv_create_collection("nowreports", fields, "nowreports collection")
+  collection = mv_create_collection("nowreports_bge", fields, "testing collection")
   print('Collection created: ', collection)
   return collection
 
@@ -163,7 +172,6 @@ def mv_check_filingID(filingID):
   array_from_file = np.loadtxt(f'test_data/test_vector_{EMBEDDING_SIZE}')
   res = mv_search_and_query([array_from_file], expr="filingID == " + str(filingID), limit=9999)[0]
   return res
-  #print('Found ' + str(len(res))+ ' entries.')
 
 def mv_get_row_by_filingid(filingid):
   query = 'filingID == ' + str(filingid)
@@ -195,10 +203,21 @@ MV_DEF_SEARCH_PARAMS = {"metric_type": "COSINE","params": {"nprobe": 1024, "nlis
 }
 
 def mv_search_and_query(search_vectors, search_params=MV_DEF_SEARCH_PARAMS, expr='', limit=13):
-    print('-----limit', limit)
     collection.load()
-    result = collection.search(search_vectors, "embeddings", search_params, limit=limit, output_fields=["source", "filingID"], expr=expr)
-    return result
+
+    sparse_search_params = {"metric_type": "IP"}
+    sparse_req = AnnSearchRequest(search_vectors["sparse"],
+                                  "sparse_vector", sparse_search_params, limit=limit, expr=expr)
+    dense_search_params = {"metric_type": "L2"}
+    dense_req = AnnSearchRequest(search_vectors["dense"],
+                                 "dense_vector", dense_search_params, limit=limit, expr=expr)
+
+    # Search topK docs based on dense and sparse vectors and rerank with RRF.
+    res = collection.hybrid_search([sparse_req, dense_req], rerank=RRFRanker(),
+                            limit=limit, output_fields=['source'])
+    print(res)
+    #result = collection.search(search_vectors, "embeddings", search_params, limit=limit, output_fields=["source", "filingID"], expr=expr)
+    return res
 
 def mv_pg_crosscheck_chunks(filingID, chunksNr=999):
   sql_query = 'SELECT chunks from filings where id = :filingID'
@@ -216,9 +235,10 @@ def mv_get_max_id(filingID):
 ################################################## LEVEL 2 #################################################
 
 def mv_reset_collection():
-  mv_drop_collection('nowreports')
+  mv_drop_collection('nowreports_bge')
   collection = mv_create_nowreports_collection()
-  mv_create_index(collection, "embeddings", "IVF_FLAT", "L2", {"nlist": 128})
+  mv_create_index(collection, "sparse_vector", "SPARSE_INVERTED_INDEX", "IP")
+  mv_create_index(collection, "dense_vector", "FLAT", "L2")
 
 def mv_delete_filingid(filingid):
   ids = mv_get_row_by_filingid(filingid)
@@ -226,10 +246,15 @@ def mv_delete_filingid(filingid):
   expr = "pk in " + ids_to_delete
   collection.delete(expr)
   collection.flush()
+  print('deleted')
+
 
 def batch_del_filingids(filing_ids):
   for filing_id in filing_ids:
-    mv_delete_filingid(filing_id)
+    try:
+      mv_delete_filingid(filing_id)
+    except:
+      print()
   print('batch_delete done')
 
 def mv_reset_test_collection():
@@ -240,7 +265,7 @@ def mv_reset_test_collection():
   collection.load()
 
 
-#mv_query_by_filingid(4, ["source"]) # outputs to file all mv sources
+#mv_query_by_filingid(4703, ["source"]) # outputs to file all mv sources
 #ids_to_delete = ['1']  # Rep lace with actual IDs of your vectors
 #print(mv_pg_crosscheck_chunks(1408,147))
 #print(mv_delete_filingid(4))
@@ -248,7 +273,7 @@ def mv_reset_test_collection():
 #print(mv_check_filingID(4)) # loads random question and prints response
 #print(mv_pg_crosscheck_chunks(1528,99))
 #mv_reset_collection()
-#batch_del_filingids([1528,5,6,7,8,9,10,11,12,33,34,35,36,13,14,15,16,17,18,19,20,21,22,23,24])
+#batch_del_filingids([1,2,3,4,5,6])
 
-mv_reset_test_collection();
+#mv_reset_collection()
 

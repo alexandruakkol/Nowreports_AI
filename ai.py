@@ -7,6 +7,7 @@ from mistralai.client import MistralClient
 from mistralai.models.chat_completion import ChatMessage
 import os
 from sentence_transformers import SentenceTransformer
+from pymilvus.model.hybrid import BGEM3EmbeddingFunction
 
 
 api_key = os.environ["MISTRAL_API_KEY"]
@@ -53,7 +54,8 @@ openai_tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 
 load_dotenv()
 llm_client = OpenAI()
-model = SentenceTransformer('alexakkol/BAAI-bge-base-en-nowr-1-2')
+
+# model = SentenceTransformer('alexakkol/BAAI-bge-base-en-nowr-1-2')
 
 # thenlper/gte-large is the best of all these
 # nickmuchi/setfit-finetuned-financial-text-classification meh, didnt work with apple. is also old
@@ -61,8 +63,11 @@ model = SentenceTransformer('alexakkol/BAAI-bge-base-en-nowr-1-2')
 # sentencetransformer all-MiniLM-L6-v2 still wrong..
 # M2 bert 80M no RAM
 
+ef = BGEM3EmbeddingFunction(use_fp16=False, device="cpu", model_name='BAAI/bge-m3')
+
 def calc_embeddings(data):
-    return model.encode([data], normalize_embeddings=True)
+    return ef(data)
+    # return model.encode([data], normalize_embeddings=True)
 
 def qa(messages):
     messages.insert(0, SYSTEM_PROMPT)

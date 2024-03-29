@@ -67,15 +67,15 @@ def postQueryProc(postquery, finterms):
     return postquery
 
 def get_similarities(question, filingID, limit=13):
-    q_embed = calc_embeddings(question)[0]
-    hits = mv_search_and_query([q_embed], expr="filingID == " + str(filingID), limit=limit)[0]
+    query_embeddings = calc_embeddings([question])
+    res = mv_search_and_query(query_embeddings, expr="filingID == " + str(filingID), limit=limit)
 
     #print('HITS:',hits) #TODO: eliminate unsure anwsers by distance
 
     #if True: # debug for distance optimization
         #print('Distances ' + str(hits.distances))
-
-    context_arr = [hit.entity.get('source') for hit in hits]
+    print('res0', res[0])
+    context_arr = [hit.fields["source"] for hit in res[0]]
     #unduped_context_arr = undupe_context_arr(context_arr)
     unduped_context_arr = context_arr
     logAnwsering(question, unduped_context_arr)
@@ -83,6 +83,7 @@ def get_similarities(question, filingID, limit=13):
     return ', '.join(unduped_context_arr)
 
 def answer_question(messages, filingID):
+    print('got question')
     question = messages[-1]["content"]
     prequery_results = preQueryProc(question, filingID) # finds data for formula requirements
     finterm_values = prequery_results[0]
