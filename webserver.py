@@ -1,5 +1,5 @@
 from ai import calc_embeddings, qa_mixtral
-from db import mv_search_and_query, print_file, pg_get_injections, mv_check_filingID
+from db import mv_search_and_query, print_file, pg_get_injections, mv_check_filingID, mv_query_by_filingid
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 import json
@@ -130,7 +130,7 @@ def handle_completion():
 @app.route("/test", methods=["GET"]) # this endpoint tests this API and Milvus (not openAI)
 def handle_apitest():
     try:
-        is_mv_check_ok = type(mv_check_filingID(4)[2].distance) is float
+        is_mv_check_ok = type(mv_query_by_filingid(4657, ["sparse_vector"])[0]['pk']) is str
         if is_mv_check_ok:
             return '', 200
         else:

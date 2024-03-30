@@ -1,12 +1,10 @@
 from dotenv import load_dotenv #pip install python-dotenv
 from openai import OpenAI
-from InstructorEmbedding import INSTRUCTOR
 from transformers import GPT2Tokenizer, AutoModel, AutoTokenizer
 from db import print_file
 from mistralai.client import MistralClient
 from mistralai.models.chat_completion import ChatMessage
 import os
-from sentence_transformers import SentenceTransformer
 from pymilvus.model.hybrid import BGEM3EmbeddingFunction
 
 

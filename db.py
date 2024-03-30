@@ -170,7 +170,8 @@ def mv_check_filingID(filingID):
   if('--wdir' in sys.argv): dir = '/home/alexandru/Desktop/nowreports_ai/' + dir
 
   array_from_file = np.loadtxt(f'test_data/test_vector_{EMBEDDING_SIZE}')
-  res = mv_search_and_query([array_from_file], expr="filingID == " + str(filingID), limit=9999)[0]
+  res = mv_search_and_query([array_from_file], expr="filingID == " + str(filingID), limit=9999)[0]['dense']
+  print('----------', res)
   return res
 
 def mv_get_row_by_filingid(filingid):
@@ -181,15 +182,18 @@ def mv_query_by_filingid(filingid, output_fields=["source"], save_embedding=Fals
   collection.load()
   query = 'filingID == ' + str(filingid)
   result = collection.query(query, output_fields=output_fields)
-  with open('logs/queryresults.txt', 'w') as file:
-    for obj in result:
-      file.write('\n===========================================================')
-      file.write(str(obj["source"]))
+
+  if 'source' in output_fields:
+    with open('logs/queryresults.txt', 'w') as file:
+      for obj in result:
+        file.write('\n===========================================================')
+        file.write(str(obj["source"]))
+
   if len(result) == 0:
     print('mv_query_by_filingid error: No embedding found for id')
     return
   if save_embedding:
-    np.savetxt('test_data/test_vector_' + str(EMBEDDING_SIZE), result[0]["embeddings"])
+    np.savetxt('test_data/test_vector_' + str(EMBEDDING_SIZE), result[0]['sparse_vector'])
 
   print('Success! Output printed to queryresults.txt')
   return result
@@ -215,7 +219,6 @@ def mv_search_and_query(search_vectors, search_params=MV_DEF_SEARCH_PARAMS, expr
     # Search topK docs based on dense and sparse vectors and rerank with RRF.
     res = collection.hybrid_search([sparse_req, dense_req], rerank=RRFRanker(),
                             limit=limit, output_fields=['source'])
-    print(res)
     #result = collection.search(search_vectors, "embeddings", search_params, limit=limit, output_fields=["source", "filingID"], expr=expr)
     return res
 
@@ -265,7 +268,7 @@ def mv_reset_test_collection():
   collection.load()
 
 
-#mv_query_by_filingid(4703, ["source"]) # outputs to file all mv sources
+#mv_query_by_filingid(4657, ["source"]) # outputs to file all mv sources
 #ids_to_delete = ['1']  # Rep lace with actual IDs of your vectors
 #print(mv_pg_crosscheck_chunks(1408,147))
 #print(mv_delete_filingid(4))
@@ -274,6 +277,5 @@ def mv_reset_test_collection():
 #print(mv_pg_crosscheck_chunks(1528,99))
 #mv_reset_collection()
 #batch_del_filingids([1,2,3,4,5,6])
-
 #mv_reset_collection()
 
