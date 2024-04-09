@@ -97,7 +97,7 @@ def gen_synthetic_queries(csvfile):
             for ix, text in enumerate(csv_reader):
                 text = text[0]
                 if(text=='text'): continue
-                if(ix == 6): break # for sampling TODO: remove in prod
+                #if(ix == 6): break # for sampling TODO: remove in prod
 
                 # generate question with LLM
                 query = prompt_template.format(context_str=text, num_questions_per_chunk=4)
