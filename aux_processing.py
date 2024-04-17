@@ -12,8 +12,47 @@ from transformers import GPT2Tokenizer
 import ebooklib
 from ebooklib import epub
 from llama_index.llms.openai import OpenAI
+import json
+import re
 
 embed_model = OpenAIEmbedding()
+
+
+def extract_text_with_tables(html_data):
+    """this parses the text but leaves tables as HTML for structure"""
+
+    soup = BeautifulSoup(html_data, 'html.parser')
+
+    # Initialize variables to store extracted text and HTML table content
+    extracted_text = []
+    extracted_tables = []
+
+    # Process each element in the BeautifulSoup object
+    for element in soup.descendants:
+        # Check if the element is a table
+        if element.name == 'table':
+            # Append the HTML representation of the table
+            extracted_tables.append(str(element))
+        else:
+            # If the element is not a table, extract its text content
+            text = element.get_text(strip=True)
+            if text:  # Append non-empty text content
+                extracted_text.append(text)
+
+    # Join the extracted text elements into a single string
+    extracted_text = ' '.join(extracted_text)
+
+    # Return the extracted text and list of HTML table representations
+    return extracted_text, extracted_tables
+
+def read_jsonl(file_path):
+    data = []
+    with open(file_path, 'r') as file:
+        for line in file:
+            # Remove leading/trailing whitespace and parse the JSON
+            json_obj = json.loads(line.strip())
+            data.append(json_obj)
+    return data
 
 def extract_text_from_epub(epub_file):
     print('---- Extracting text...')
@@ -33,6 +72,28 @@ def extract_text_from_epub(epub_file):
     with open(output_file, 'w', newline='', encoding='utf-8') as file:
         file.write(result)
 
+def extract_text_from_pdf(pdf_file):
+    import fitz  # Import PyMuPDF
+
+    texts = []
+    try:
+        pdf_document = fitz.open(pdf_file)
+
+        for page_number in range(len(pdf_document)):
+            page = pdf_document[page_number]
+
+            page_text = page.get_text()
+            texts.append(page_text.replace('\n',''))
+
+        pdf_document.close()
+
+    except Exception as e:
+        print(f"PDF read occurred: {e}")
+
+    output_file = 'txt_from_epub.txt'
+    with open(output_file, 'w', newline='', encoding='utf-8') as file:
+        file.write('\n'.join(texts))
+
 def split_text_into_chunks(input_file, output_file, chunk_size=500):
     print('---- Chunking text...')
     token_counts = []
@@ -40,8 +101,9 @@ def split_text_into_chunks(input_file, output_file, chunk_size=500):
 
     documents = SimpleDirectoryReader(input_files=[input_file]).load_data()
     # decrease breakpoint as much as possible without getting single outlier sentences
+    # less threshold = more chunks
     splitter = SemanticSplitterNodeParser(
-        buffer_size=1, breakpoint_percentile_threshold=93, embed_model=embed_model
+        buffer_size=4, breakpoint_percentile_threshold=90, embed_model=embed_model
     )
 
     chunks = splitter.get_nodes_from_documents(documents)
@@ -53,7 +115,7 @@ def split_text_into_chunks(input_file, output_file, chunk_size=500):
 
         for chunk in chunks:
             chunk_text = chunk.get_content()
-            if(len(chunk_text) < 100): continue
+            if(len(chunk_text) < 250): continue
 
             #count tokens
             nr_tokens = len(openai_tokenizer.tokenize(chunk_text))
@@ -64,7 +126,6 @@ def split_text_into_chunks(input_file, output_file, chunk_size=500):
 
 def gen_synthetic_queries(csvfile):
     print('---- Generating synthetic queries...')
-    import re
     import json
     llm = OpenAI(model='gpt-3.5-turbo', response_format={ "type": "json_object" }
 )
@@ -89,7 +150,7 @@ def gen_synthetic_queries(csvfile):
 
         queries = {}
         relevant_docs = {}
-        with open('training_data/output.csv', 'a') as file_w:
+        with open('training_data/output.csv', 'w') as file_w:
             writer = csv.writer(file_w)
             column_names = ['text']
             writer.writerow(column_names)
@@ -100,7 +161,7 @@ def gen_synthetic_queries(csvfile):
                 #if(ix == 6): break # for sampling TODO: remove in prod
 
                 # generate question with LLM
-                query = prompt_template.format(context_str=text, num_questions_per_chunk=4)
+                query = prompt_template.format(context_str=text, num_questions_per_chunk=2)
                 response = llm.complete(query)
                 pairs = str(response).strip().split("---")
 
@@ -156,13 +217,17 @@ def filter_by_blacklist(csv_file):
 """
 
 def gen_training_data(doc_filename):
-    SUPPORTED_INPUT_EXT = ['epub']
+    SUPPORTED_INPUT_EXT = ['epub', 'pdf']
     extension = doc_filename.split('.')
     extension = extension[len(extension)-1]
-    if(extension not in 'epub'): raise Exception('Input file type not supported. Supported types are: ', SUPPORTED_INPUT_EXT)
+    if(extension not in SUPPORTED_INPUT_EXT): raise Exception('Input file type not supported. Supported types are: ', SUPPORTED_INPUT_EXT)
 
     # saves to txt_from_epub.txt
-    extract_text_from_epub('epub.epub')
+    if extension == 'epub':
+        extract_text_from_epub(doc_filename)
+    if extension == 'pdf':
+        extract_text_from_pdf(doc_filename)
+
     # saves to output.csv. You should filter out intros and other fluff here
     split_text_into_chunks('txt_from_epub.txt', 'output.csv')
     # saves to trainingdata/output.csv
@@ -170,4 +235,68 @@ def gen_training_data(doc_filename):
     # saves to trainingdata/output_filtered.csv
     filter_by_blacklist('training_data/output.csv')
 
-#gen_training_data('epub.epub')
+def contains_blacklisted_phrase(text, blacklist):
+    # Create a regular expression pattern that matches any phrase in the blacklist
+    pattern = re.compile(r'\b(?:' + '|'.join(map(re.escape, blacklist)) + r')\b', flags=re.IGNORECASE)
+    match = pattern.search(text)
+    return match is not None
+
+def csv_to_bge_format(csv_file):
+    #writes conversion to out2.jsonl (and adds html data too)
+    jsonl_data = read_jsonl('bge_finetuning_data.jsonl')
+    BLACKLIST = ['Registrant', 'Table of contents', 'Table of Contents', 'COVID', 'compliance', 'Exhibit', 'SEC', 'registration', 'bookkeeping', 'accounting', 'GAAP', 'financial reporting', 'exchange act'
+                 , 'law', 'environmental' ,'climate change', 'equity and inclusion', 'harassment', '2021 to 2023'
+                 ]
+    with open('out.jsonl', 'w', newline='') as file:
+        for obj in jsonl_data:
+            pos = json.loads(obj['pos'][0])
+            label = pos['label']
+            data = pos['data']
+
+            try:
+                p_data = extract_text_with_tables(data, 'html.parser').get_text()
+            except:
+                p_data = data
+
+            if contains_blacklisted_phrase(p_data+' '+obj['query']+' '+label, BLACKLIST):
+                continue
+
+            newObj = {}
+            newObj['query'] = obj['query']
+            newObj['pos'] = [{"label":label, "data":p_data}]
+            newObj['neg'] = []
+            file.writelines([json.dumps(newObj)+'\n'])
+
+        with open(csv_file, 'r') as in_file:
+            csv_reader = csv.reader(in_file)
+            for jsonl_elem in csv_reader:
+                jsonl_text = jsonl_elem[0]
+                if(jsonl_text == 'text'): continue
+
+                split_text = jsonl_text.split('bot: ')
+                human = split_text[0]
+                bot = split_text[1]
+
+                obj = {}
+                obj['query'] = human.replace('human', '')
+                obj['pos'] = [{'data':bot}]
+
+                file.writelines([json.dumps(obj) + '\n'])
+    check_add_neg('out.jsonl')
+
+def check_add_neg(jsonl_fname):
+    jsonl_data = read_jsonl(jsonl_fname)
+    new_data = []
+    for obj in jsonl_data:
+        newobj = {}
+        newobj['query'] = obj['query']
+        newobj['pos'] = [obj['pos'][0]['data']]
+        newobj['neg'] = ['']
+
+        new_data.append(newobj)
+
+    with open('out2.jsonl', 'w', newline='') as file:
+        for oo in new_data:
+            file.writelines([json.dumps(oo)+'\n'])
+
+csv_to_bge_format('training_data/dataset_1.csv')

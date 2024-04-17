@@ -2,6 +2,8 @@ from ai import calc_embeddings
 from db import mv_search_and_query, mv_insert_data, mv_query_by_filingid
 from bs4 import BeautifulSoup as bs
 from webserver import answer_question
+from main import embedding
+
 
 def get_similarities(question, filingID):
     question_instruction = 'Represent this question or request for retrieval: '
@@ -27,3 +29,6 @@ def addMV_record(filingID, text):
 #res = get_similarities('give me comapany sales per segment', 1528)
 
 #addMV_record(1528, 'ROE (Return on equity) is net income divided by shareholders equity')
+#this embeds one filing only. Use FLAG1 in main for logging the results only
+embedding([[4,'1090727/000109072723000006/0001090727-23-000006.txt','320193']])
+quit()

@@ -17,7 +17,7 @@ import os
 #SINGLE_REPORT_MODE = False //TODO this
 TIMER_SWITCH = True
 API_SERVER = 'https://nowreports.com/api/'
-TEST_MODE = False # clears test collection and only pulls AAPL. for testing only!
+TEST_MODE = True # clears test collection and only pulls AAPL. for testing only!
 
 def debug_print_processed_texts(processed_texts):
     with open('logs/queryresults.txt', 'w') as file:
@@ -62,7 +62,7 @@ def embedding(toEmbed):
         try:
             processed_texts = parse_10k_filing(fullreport)
 
-            if False:  # TODO: debug mech
+            if False:  #FLAG1  TODO: debug texts
                 debug_print_processed_texts(processed_texts)
                 quit()
 
@@ -76,7 +76,12 @@ def embedding(toEmbed):
         print('---- Parsing OK ' + filing_id_str)
         filingIDs = []
 
-        embeddings = calc_embeddings(processed_texts)
+        embeddings = calc_embeddings(processed_texts) #TODO: prod
+        print('e:', embeddings)
+
+        if False:  # FLAG2  TODO: debug embeddings
+            debug_print_processed_texts(embeddings)
+            quit()
 
         for _ in enumerate(processed_texts):
             filingIDs.append(filing_id)
@@ -118,13 +123,14 @@ def embedding(toEmbed):
 
         print(f"---PROCESSING SUCCESS {filing_id} {timing_sentence}")
 
+
 def start_regular_pull():
     toEmbed = pg_pullToEmbed()
     print(toEmbed)
     embedding(toEmbed)
 
 def start_test_pull():
-    embedding([[4,'1090727/000109072723000006/0001090727-23-000006.txt','320193']])
+    embedding([[4653,'1090727/000109072723000006/0001090727-23-000006.txt','320193']])
 
 if TEST_MODE:
     from db import mv_reset_test_collection, mv_query_by_filingid
@@ -135,9 +141,8 @@ if TEST_MODE:
 
     SOUND_FILEPATH = 'ding.mp3'
     os.system(f"afplay {SOUND_FILEPATH}")
-else:
-    start_regular_pull()
+
+#else: start_regular_pull() #TODO: rem prod
 #similarities = get_similarities('how much is the dividend?', 37)
 #print(similarities)
-
 

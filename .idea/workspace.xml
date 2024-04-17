@@ -7,13 +7,16 @@
     <list default="true" id="e887b4ef-6a6b-40a8-bf0b-6acf2692add4" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ai.py" beforeDir="false" afterPath="$PROJECT_DIR$/ai.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bge_training_data.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/aux_processing.py" beforeDir="false" afterPath="$PROJECT_DIR$/aux_processing.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db.py" beforeDir="false" afterPath="$PROJECT_DIR$/db.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/epub.epub" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/logs/actual_prompt.txt" beforeDir="false" afterPath="$PROJECT_DIR$/logs/actual_prompt.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logs/query_results.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/query_results.log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logs/queryresults.txt" beforeDir="false" afterPath="$PROJECT_DIR$/logs/queryresults.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test_data/test_vector_384" beforeDir="false" afterPath="$PROJECT_DIR$/test_data/test_vector_384" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/system_prompt.txt" beforeDir="false" afterPath="$PROJECT_DIR$/system_prompt.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/testing.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/webserver.py" beforeDir="false" afterPath="$PROJECT_DIR$/webserver.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />

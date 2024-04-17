@@ -55,7 +55,7 @@ def preQueryProc(question, filingID):
             if 'ask the user' in question:
                 question = formula_element
             #print('---formula ', question)
-            finterm_value = get_similarities(question, filingID, 3)
+            finterm_value = get_similarities(question, filingID, 7)
             finterm_values.append(finterm_value)
     return [finterm_values, finterms]
 
@@ -74,7 +74,6 @@ def get_similarities(question, filingID, limit=13):
 
     #if True: # debug for distance optimization
         #print('Distances ' + str(hits.distances))
-    print('res0', res[0])
     context_arr = [hit.fields["source"] for hit in res[0]]
     #unduped_context_arr = undupe_context_arr(context_arr)
     unduped_context_arr = context_arr
@@ -83,7 +82,6 @@ def get_similarities(question, filingID, limit=13):
     return ', '.join(unduped_context_arr)
 
 def answer_question(messages, filingID):
-    print('got question')
     question = messages[-1]["content"]
     prequery_results = preQueryProc(question, filingID) # finds data for formula requirements
     finterm_values = prequery_results[0]
@@ -92,17 +90,22 @@ def answer_question(messages, filingID):
     if len(finterms) > 0:
         limit = 3
         finterm_values.append(' Use these figures to calculate the metric the user is asking for.')
-    else: limit = 11 #if too large, does not fit into context size
+    else: limit = 10 #if too large, does not fit into context size
+
+    # if there was a question asked before this one, add that one to embedding search
+    if len(messages) >= 3:
+        pre_last_question = messages[-3]["content"]
+        question =  ' [QUESTION]: ' + question + ' ( [CONTEXT]: ' + pre_last_question + ' )'
 
     context = get_similarities(question, filingID, limit)
     for finterm_value in finterm_values:
         context += f' {finterm_value} '
     context = postQueryProc(context, finterms)
-    messages[-1]["content"] = messages[-1]["content"] + ' [CONTEXT]: ' + context
+    messages[-1]["content"] = '[LAST QUESTION]: ' + messages[-1]["content"] + ' [CONTEXT]: ' + context
     for stream_msgs in qa_mixtral(messages):
         if stream_msgs and len(stream_msgs) > 0:
             if False:
-                print(f"{stream_msgs}".encode('utf-8'))
+                print('msg: ',stream_msgs, type(stream_msgs))
             yield f"{stream_msgs}[ss]".encode('utf-8')
 
 

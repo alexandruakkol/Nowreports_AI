@@ -18,7 +18,7 @@ connections.connect(
 print("Connection to Milvus established successfully.")
 
 try:
-  collection = Collection('nowreports_bge') # nowreports | test
+  collection = Collection('test') # nowreports_bge | test
   collection.load()
 except Exception as e:
   print(e)
@@ -143,7 +143,7 @@ def mv_create_nowreports_collection():
     FieldSchema(name="dense_vector", dtype=DataType.FLOAT_VECTOR,
                 dim=dense_dim)
   ]
-  collection = mv_create_collection("nowreports_bge", fields, "testing collection")
+  collection = mv_create_collection("nowreports_bge", fields, "production collection")
   print('Collection created: ', collection)
   return collection
 
@@ -154,7 +154,7 @@ def mv_create_test_collection():
   dense_dim = ef.dim["dense"]
 
   fields = [
-    FieldSchema(name="pk", dtype=DataType.VARCHAR, is_primary=True, auto_id=False, max_length=100),
+    FieldSchema(name="pk", dtype=DataType.VARCHAR, is_primary=True, auto_id=True, max_length=100),
     FieldSchema(name="filingID", dtype=DataType.INT64),
     FieldSchema(name="source", dtype=DataType.VARCHAR, max_length=65535),
     FieldSchema(name="sparse_vector", dtype=DataType.SPARSE_FLOAT_VECTOR),
@@ -183,11 +183,14 @@ def mv_query_by_filingid(filingid, output_fields=["source"], save_embedding=Fals
   query = 'filingID == ' + str(filingid)
   result = collection.query(query, output_fields=output_fields)
 
-  if 'source' in output_fields:
-    with open('logs/queryresults.txt', 'w') as file:
-      for obj in result:
-        file.write('\n===========================================================')
-        file.write(str(obj["source"]))
+  with open('logs/queryresults.txt', 'w') as file:
+    if 'source' in output_fields:
+        for obj in result:
+          file.write('\n===========================================================')
+          file.write(str(obj["source"]))
+    else:
+      file.write(str(result))
+
 
   if len(result) == 0:
     print('mv_query_by_filingid error: No embedding found for id')
@@ -198,15 +201,8 @@ def mv_query_by_filingid(filingid, output_fields=["source"], save_embedding=Fals
   print('Success! Output printed to queryresults.txt')
   return result
 
-#TODO: change
-MV_DEF_SEARCH_PARAMS = {"metric_type": "COSINE","params": {"nprobe": 1024, "nlist":1024},
-        # search for vectors with a distance smaller than RADIUS
-        # "radius": 0.4,
-        # # filter out vectors with a distance smaller than or equal to RANGE_FILTER
-        # "range_filter" : 0.32
-}
 
-def mv_search_and_query(search_vectors, search_params=MV_DEF_SEARCH_PARAMS, expr='', limit=13):
+def mv_search_and_query(search_vectors, expr='', limit=13):
     collection.load()
 
     sparse_search_params = {"metric_type": "IP"}
@@ -268,7 +264,7 @@ def mv_reset_test_collection():
   collection.load()
 
 
-#mv_query_by_filingid(4657, ["source"]) # outputs to file all mv sources
+#mv_query_by_filingid(4653, output_fields=["source"]) # outputs to file all mv sources
 #ids_to_delete = ['1']  # Rep lace with actual IDs of your vectors
 #print(mv_pg_crosscheck_chunks(1408,147))
 #print(mv_delete_filingid(4))
@@ -278,4 +274,5 @@ def mv_reset_test_collection():
 #mv_reset_collection()
 #batch_del_filingids([1,2,3,4,5,6])
 #mv_reset_collection()
+
 
