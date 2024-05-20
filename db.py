@@ -18,7 +18,8 @@ connections.connect(
 print("Connection to Milvus established successfully.")
 
 try:
-  collection = Collection('nowreports_bge') # nowreports | test
+  collection = Collection('nowreports_beta') # nowreports_bge | test | nowreports_beta
+  print(collection)
   collection.load()
 except Exception as e:
   print(e)
@@ -60,6 +61,42 @@ def pg_pullToEmbed():
     order by c.mcap desc --offset 200
   '''
   return sql.run(query)
+
+def pg_pullTranscriptsByCik(cik):
+  query = '''
+  select e.callid, e.symbol, max(f.id) as last_filing_id--, last_filing.id as last_filing_id, e.id 
+  from earningsCalls e
+  join companies c on c.symbol=e.symbol
+  join filings f on f.cik=c.cik
+  where c.cik= :cik
+  group by e.symbol, e.callid
+  '''
+  return sql.run(query, cik=str(cik))
+
+def pg_pullTranscripts():
+  query = '''
+    select e.callid, e.symbol, max(f.id) as last_filing_id, c.cik
+    from earningsCalls e
+    join companies c on c.symbol=e.symbol
+    join filings f on f.cik=c.cik
+    where e.status = 'new'
+    group by e.symbol, e.callid, e.id, c.cik
+  '''
+  return sql.run(query)
+
+
+def pg_setCallInsertStatus(callid, status):
+  if status not in ['added']:
+    raise Exception('pg_setCallInsertStatus: Invalid status: ' + status)
+  query = 'UPDATE earningsCalls set status = :status where callid = :callid'
+  return sql.run(query, callid=callid, status=status)
+
+
+def pg_pullTranscriptMessages(callid):
+  query = '''
+    select txt, agent from earningsMessages where callid = :callid
+  '''
+  return sql.run(query, callid=str(callid))
 
 def pg_update_chunks_nr(filingID, chunksNr):
   sql_query = "UPDATE filings set chunks = :chunksNr where id = :filingID"
@@ -112,7 +149,9 @@ def mv_create_index(collection, field_name, index_type, metric_type, params={}):
   collection.create_index(field_name, index)
 
 def mv_getCollections():
-  return utility.list_collections()
+  cols = utility.list_collections()
+  print(cols)
+  return cols
 
 def mv_select_all():
   # Retrieve the primary key field name
@@ -120,11 +159,10 @@ def mv_select_all():
   #print(primary_field)
   # Load the collection into memory for search
   collection.load()
-
   # Query to fetch all IDs (assuming primary field is "id")
   expr = f"{primary_field}"  # Update this query based on your data
   entities = collection.query(expr, output_fields=[primary_field])
-  #print(entities)
+  print(entities)
 
 def mv_drop_collection(name):
   utility.drop_collection(name)
@@ -154,14 +192,36 @@ def mv_create_test_collection():
   dense_dim = ef.dim["dense"]
 
   fields = [
-    FieldSchema(name="pk", dtype=DataType.VARCHAR, is_primary=True, auto_id=False, max_length=100),
+    FieldSchema(name="pk", dtype=DataType.VARCHAR, is_primary=True, auto_id=True, max_length=100),
     FieldSchema(name="filingID", dtype=DataType.INT64),
     FieldSchema(name="source", dtype=DataType.VARCHAR, max_length=65535),
     FieldSchema(name="sparse_vector", dtype=DataType.SPARSE_FLOAT_VECTOR),
     FieldSchema(name="dense_vector", dtype=DataType.FLOAT_VECTOR,
-                dim=dense_dim)
+                dim=dense_dim),
+    FieldSchema(name="isTranscript", dtype=DataType.BOOL)
   ]
+
   collection = mv_create_collection("test", fields, "testing collection")
+  print('Collection created: ', collection)
+  return collection
+
+def mv_create_beta_collection():
+  from pymilvus.model.hybrid import BGEM3EmbeddingFunction
+
+  ef = BGEM3EmbeddingFunction(use_fp16=False, device="cpu")
+  dense_dim = ef.dim["dense"]
+
+  fields = [
+    FieldSchema(name="pk", dtype=DataType.VARCHAR, is_primary=True, auto_id=True, max_length=100),
+    FieldSchema(name="filingID", dtype=DataType.INT64),
+    FieldSchema(name="source", dtype=DataType.VARCHAR, max_length=65535),
+    FieldSchema(name="sparse_vector", dtype=DataType.SPARSE_FLOAT_VECTOR),
+    FieldSchema(name="dense_vector", dtype=DataType.FLOAT_VECTOR,
+                dim=dense_dim),
+    FieldSchema(name="isTranscript", dtype=DataType.BOOL)
+  ]
+
+  collection = mv_create_collection("nowreports_beta", fields, "beta collection")
   print('Collection created: ', collection)
   return collection
 
@@ -188,6 +248,7 @@ def mv_query_by_filingid(filingid, output_fields=["source"], save_embedding=Fals
       for obj in result:
         file.write('\n===========================================================')
         file.write(str(obj["source"]))
+  else: print('result: ', result)
 
   if len(result) == 0:
     print('mv_query_by_filingid error: No embedding found for id')
@@ -217,7 +278,7 @@ def mv_search_and_query(search_vectors, search_params=MV_DEF_SEARCH_PARAMS, expr
                                  "dense_vector", dense_search_params, limit=limit, expr=expr)
 
     # Search topK docs based on dense and sparse vectors and rerank with RRF.
-    res = collection.hybrid_search([sparse_req, dense_req], rerank=RRFRanker(),
+    res = collection.hybrid_search([sparse_req, dense_req], rerank=RRFRanker(k=5),
                             limit=limit, output_fields=['source'])
     #result = collection.search(search_vectors, "embeddings", search_params, limit=limit, output_fields=["source", "filingID"], expr=expr)
     return res
@@ -251,6 +312,13 @@ def mv_delete_filingid(filingid):
   collection.flush()
   print('deleted')
 
+def mv_delete_transcript_embeddings(filingid):
+  ids = mv_get_row_by_filingid(filingid)
+  ids_to_delete = str([str(item["pk"]) for item in ids])
+  expr = "pk in " + ids_to_delete + ' and isTranscript == True'
+  collection.delete(expr)
+  collection.flush()
+  print('deleted')
 
 def batch_del_filingids(filing_ids):
   for filing_id in filing_ids:
@@ -267,8 +335,14 @@ def mv_reset_test_collection():
   mv_create_index(collection, "dense_vector", "FLAT", "L2")
   collection.load()
 
+def reset_beta_collection():
+  mv_drop_collection('nowreports_beta')
+  mv_create_beta_collection()
+  mv_create_index(collection, "sparse_vector", "SPARSE_INVERTED_INDEX", "IP")
+  mv_create_index(collection, "dense_vector", "FLAT", "L2")
+  collection.load()
 
-#mv_query_by_filingid(4657, ["source"]) # outputs to file all mv sources
+#mv_query_by_filingid(4654, ["source"]) # outputs to file all mv sources
 #ids_to_delete = ['1']  # Rep lace with actual IDs of your vectors
 #print(mv_pg_crosscheck_chunks(1408,147))
 #print(mv_delete_filingid(4))
@@ -278,4 +352,4 @@ def mv_reset_test_collection():
 #mv_reset_collection()
 #batch_del_filingids([1,2,3,4,5,6])
 #mv_reset_collection()
-
+#reset_beta_collection()

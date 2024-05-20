@@ -5,6 +5,10 @@ from unstructured.partition.html import partition_html
 from unstructured.staging.base import elements_to_json, convert_to_dict
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from fuzzywuzzy import fuzz
+from llama_index.core.node_parser import SemanticSplitterNodeParser
+from llama_index.core import SimpleDirectoryReader, Document
+
+from ai import openai_embed_model
 
 ################### ------------- PREPROCESSING PARAMS -------------###################
 TABLE_OVERLAP_PCT = 0.3
@@ -16,23 +20,23 @@ TEXT_DISCARD_LIMIT_CHARS = 100
 
 WINDOWS = {
    0: {
-       "CHUNKSIZE": 512,
-       "SPLITPOINT": 1024
+       "CHUNKSIZE": 6000,
+       "SPLITPOINT": 4000
    },
    1: {
-       "CHUNKSIZE": 1536,
-       "SPLITPOINT": 1024
+       "CHUNKSIZE": 10000,
+       "SPLITPOINT": 8000
    }
 }
 
 TABLE_WINDOWS = {
    0: {
-       "CHUNKSIZE": 1200, # max for split tables, chars
-       "SPLITPOINT": 868 # min for concat text, chars
+       "CHUNKSIZE": 4500, # max for split tables, chars
+       "SPLITPOINT": 3000 # min for concat text, chars
    },
    1: {
-       "CHUNKSIZE": 1664,
-       "SPLITPOINT": 1024
+       "CHUNKSIZE": 8000,
+       "SPLITPOINT": 5000
    }
 }
 
@@ -67,10 +71,9 @@ def parse_10k_filing(raw_10k):
 
    processed_items = []
 
-   #print('=== starting to process ')
    bs_html = bs(document['10-K'], 'lxml')
    ee = processElements(bs_html.html)
-   #print('=== processing done')
+
    processed_items.extend(ee)
 
    # flatten
@@ -158,6 +161,19 @@ def process_tables(htmltext):
 
     return filtered_extracted_elements
 
+def semantic_string_split(in_str):
+
+    documents = [Document(text=in_str)]
+    # decrease breakpoint as much as possible without getting single outlier sentences
+    splitter = SemanticSplitterNodeParser(
+        buffer_size=1, breakpoint_percentile_threshold=90, embed_model=openai_embed_model
+    )
+
+    chunks = splitter.get_nodes_from_documents(documents)
+    texts = [chunk.get_content() for chunk in chunks]
+    filtered_by_size = [text for text in texts if len(text) > 100]
+    return filtered_by_size
 
 
-
+def cleanHTML(obj):
+    return obj

@@ -171,3 +171,57 @@ def gen_training_data(doc_filename):
     filter_by_blacklist('training_data/output.csv')
 
 #gen_training_data('epub.epub')
+
+def replaceAll(filename, _to_replace, _replace_with):
+    outfile = filename.split('.')[0] + '_replaced2.csv'
+
+    with open(filename, 'r', newline='') as csv_in:
+        with open(outfile, 'w', newline='') as csv_out:
+            reader = csv.reader(csv_in)
+            writer = csv.writer(csv_out)
+
+            for old_row in reader:
+                text = old_row[0]
+                new_row = text.replace(_to_replace, _replace_with)
+                writer.writerow([new_row])
+
+def reduceData(filename, **kwargs):
+    remove_pct = kwargs['remove_pct']
+    outfile = filename.split('.')[0] + '_reduced.csv'
+    with open(filename, 'r', newline='') as csv_in:
+            with open(outfile, 'w', newline='') as csv_out:
+                reader = csv.reader(csv_in)
+                writer = csv.writer(csv_out)
+                mod = (1 / (100 - remove_pct) ) * 100
+                for counter, old_row in enumerate(reader):
+                    if counter == 0: counter = 1
+                    if round(counter % mod, 0) == 1:
+                        writer.writerow([old_row])
+
+
+def csv_to_jsonl(filename):
+    import json
+    outfile = filename.split('.')[0] + '_out.jsonl'
+    with open(filename, 'r', newline='') as csv_in:
+            with open(outfile, 'w', newline='') as csv_out:
+                reader = csv.reader(csv_in)
+                writer = csv.writer(csv_out)
+                # {"messages": [{"role": "system", "content": "Marv is a factual chatbot that is also sarcastic."}]}
+                messages_arr = []
+                for row in reader:
+                    messages = {"messages":[]}
+                    arr = row[0].split('\n')
+                    if len(arr) < 2:
+                        continue
+                    user_prompt = arr[0]
+                    assist_prompt = arr[1]
+                    messages["messages"].append({"role": "user", "content":user_prompt})
+                    messages["messages"].append({"role": "assistant", "content": assist_prompt})
+                    messages_str = json.dumps(messages)
+                    print(messages_str)
+                    writer.writerow([messages_str])
+
+
+
+csv_to_jsonl('training_data/dataset_1_wizard.csv')
+# reduceData('training_data/dataset_1_mistral_instruct.csv', remove_pct=50)

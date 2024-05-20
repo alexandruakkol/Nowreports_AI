@@ -1,4 +1,4 @@
-from ai import calc_embeddings, qa_mixtral
+from ai import calc_embeddings, qa_mixtral, label_earnings_message
 from db import mv_search_and_query, print_file, pg_get_injections, mv_check_filingID, mv_query_by_filingid
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
@@ -26,7 +26,7 @@ def logAnwsering(question, context):
     with open('logs/query_results.log', 'a') as logfile:
         logfile.write('\n\n/////////////////////////////////////// Question: ' + question)
         for ix, el in enumerate(context):
-            logfile.write('\n CC' + str(ix) + ' =============== ' + el)
+            logfile.write('\n CC' + str(ix) + ' =============== ' + str(el))
 
 def undupe_context_arr(context_arr):
     # filter out duplicate sentences (from the window method)
@@ -68,19 +68,27 @@ def postQueryProc(postquery, finterms):
 
 def get_similarities(question, filingID, limit=13):
     query_embeddings = calc_embeddings([question])
-    res = mv_search_and_query(query_embeddings, expr="filingID == " + str(filingID), limit=limit)
+    hits = mv_search_and_query(query_embeddings, expr="filingID == " + str(filingID), limit=limit)
 
-    #print('HITS:',hits) #TODO: eliminate unsure anwsers by distance
+    print('HITS:', hits)
 
     #if True: # debug for distance optimization
         #print('Distances ' + str(hits.distances))
-    print('res0', res[0])
-    context_arr = [hit.fields["source"] for hit in res[0]]
+
+    # DISTANCE FILTERING
+    #this changes based on reranker k param
+    DISTANCE_THRESHOLD = 0.125
+    context_arr = [{"source":hit.fields["source"], "distance":hit.distance} for hit in hits[0] if hit.distance > DISTANCE_THRESHOLD]
+
     #unduped_context_arr = undupe_context_arr(context_arr)
-    unduped_context_arr = context_arr
-    logAnwsering(question, unduped_context_arr)
+    #unduped_context_arr = context_arr
+    # reranking rewrites distance (top 2 is 0.1612...)
+    logAnwsering(question, context_arr)
+
+    hit_texts = [hit['source'] for hit in context_arr]
+
     #print('\n------anws', ', '.join(unduped_context_arr))
-    return ', '.join(unduped_context_arr)
+    return ', '.join(hit_texts)
 
 def answer_question(messages, filingID):
     print('got question')
@@ -92,13 +100,13 @@ def answer_question(messages, filingID):
     if len(finterms) > 0:
         limit = 3
         finterm_values.append(' Use these figures to calculate the metric the user is asking for.')
-    else: limit = 11 #if too large, does not fit into context size
+    else: limit = 7  #if too large, does not fit into context size
 
     context = get_similarities(question, filingID, limit)
     for finterm_value in finterm_values:
         context += f' {finterm_value} '
     context = postQueryProc(context, finterms)
-    messages[-1]["content"] = messages[-1]["content"] + ' [CONTEXT]: ' + context
+    messages[-1]["content"] = '[QUESTION]: ' + messages[-1]["content"] + ' [CONTEXT]: ' + context
     for stream_msgs in qa_mixtral(messages):
         if stream_msgs and len(stream_msgs) > 0:
             if False:
@@ -138,3 +146,18 @@ def handle_apitest():
     except Exception as e:
         print('testing fault: ', e)
         return jsonify({'testing endpoint error': 'Vector DB error'}), 500
+
+@app.route('/label_earnings_message', methods=["POST"])
+def handle_label_earnings_message():
+    try:
+        if not request.is_json: return jsonify({'error': 'Request does not contain JSON data'}), 400
+
+        data = request.get_json()
+        text = data.get('text')
+        agent = data.get('agent')
+
+        label_res = label_earnings_message(agent, text)
+        return label_res, 200
+
+    except Exception as e:
+        return jsonify({'error': e}), 400
