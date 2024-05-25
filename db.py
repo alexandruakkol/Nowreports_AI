@@ -85,6 +85,10 @@ def pg_pullTranscripts():
   return sql.run(query)
 
 
+def pg_getAllFilingIDs():
+  query = 'SELECT id FROM filings where chunks is not null and chunks > 50'
+  return sql.run(query)
+
 def pg_setCallInsertStatus(callid, status):
   if status not in ['added']:
     raise Exception('pg_setCallInsertStatus: Invalid status: ' + status)
@@ -230,7 +234,7 @@ def mv_check_filingID(filingID):
   if('--wdir' in sys.argv): dir = '/home/alexandru/Desktop/nowreports_ai/' + dir
 
   array_from_file = np.loadtxt(f'test_data/test_vector_{EMBEDDING_SIZE}')
-  res = mv_search_and_query([array_from_file], expr="filingID == " + str(filingID), limit=9999)[0]['dense']
+  res = mv_search_and_query([array_from_file], expr="filingID == " + str(filingID), limit=9999)[0]['sparse_vector']
   print('----------', res)
   return res
 
@@ -254,7 +258,7 @@ def mv_query_by_filingid(filingid, output_fields=["source"], save_embedding=Fals
     print('mv_query_by_filingid error: No embedding found for id')
     return
   if save_embedding:
-    np.savetxt('test_data/test_vector_' + str(EMBEDDING_SIZE), result[0]['sparse_vector'])
+    np.savetxt('test_data/test_vector_' + str(EMBEDDING_SIZE), result[0])
 
   print('Success! Output printed to queryresults.txt')
   return result
@@ -283,10 +287,16 @@ def mv_search_and_query(search_vectors, search_params=MV_DEF_SEARCH_PARAMS, expr
     #result = collection.search(search_vectors, "embeddings", search_params, limit=limit, output_fields=["source", "filingID"], expr=expr)
     return res
 
-def mv_pg_crosscheck_chunks(filingID, chunksNr=999):
-  sql_query = 'SELECT chunks from filings where id = :filingID'
-  sql_chunks = sql.run(sql_query, filingID=filingID)[0][0]
-  mv_chunks = len(mv_check_filingID(filingID))
+def mv_pg_crosscheck_chunks(cik, chunksNr=999):
+  sql_query = 'SELECT id, chunks from filings where cik = :cik'
+  sql_res = sql.run(sql_query, cik=cik)[0]
+  filing_id = sql_res[0]
+  sql_chunks = sql_res[1]
+
+  fid = mv_check_filingID(filing_id)
+  print('fod',fid)
+
+  mv_chunks = len(mv_check_filingID(filing_id))
   res = {"inp":chunksNr, "sql_chunks":sql_chunks, "mv_chunks":mv_chunks, "ok":False}
   if sql_chunks == mv_chunks == chunksNr: res["ok"] = True
   return res
@@ -342,7 +352,10 @@ def reset_beta_collection():
   mv_create_index(collection, "dense_vector", "FLAT", "L2")
   collection.load()
 
-#mv_query_by_filingid(4654, ["source"]) # outputs to file all mv sources
+# # iterates through filings and checks if there are Milvus vectors for them
+# def vector_check():
+
+#mv_query_by_filingid(4656, ["sparse_vector"], save_embedding=True) # outputs to file all mv sources
 #ids_to_delete = ['1']  # Rep lace with actual IDs of your vectors
 #print(mv_pg_crosscheck_chunks(1408,147))
 #print(mv_delete_filingid(4))
@@ -353,3 +366,4 @@ def reset_beta_collection():
 #batch_del_filingids([1,2,3,4,5,6])
 #mv_reset_collection()
 #reset_beta_collection()
+

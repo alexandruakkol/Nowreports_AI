@@ -9,7 +9,7 @@ from pymilvus.model.hybrid import BGEM3EmbeddingFunction
 from llama_index.embeddings.openai import OpenAIEmbedding
 
 api_key = os.environ["MISTRAL_API_KEY"]
-mistral_model = "open-mixtral-8x7b"
+mistral_model = "open-mixtral-8x22b"
 mistral_client = MistralClient(api_key=api_key)
 
 SYSTEM_PROMPT = {"role": "system",

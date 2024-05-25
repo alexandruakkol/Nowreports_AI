@@ -1,14 +1,7 @@
 from ai import calc_embeddings
-from db import mv_search_and_query, mv_insert_data, mv_query_by_filingid
+from db import mv_search_and_query, mv_insert_data, mv_query_by_filingid, pg_getAllFilingIDs
 from bs4 import BeautifulSoup as bs
-from webserver import answer_question
-
-def get_similarities(question, filingID):
-    question_instruction = 'Represent this question or request for retrieval: '
-    q_embed = calc_embeddings(question, question_instruction)[0]
-    hits = mv_search_and_query([q_embed], expr="filingID == " + str(filingID))[0]
-    print(hits)
-    return [hit.entity.get('source') for hit in hits]
+#from webserver import get_similarities
 
 def testTables():
     # todo:
@@ -21,9 +14,33 @@ def addMV_record(filingID, text):
     last_id = len(mv_query_by_filingid(filingID))
     mv_insert_data([[str(last_id)], [filingID], [text], [text_embed]])
 
+#scans all SQL filing ids and checks in vectorDB for vectors
+def scan_vectors():
+    ids = pg_getAllFilingIDs()
+
+    for filingID in ids:
+
+        filingID = filingID[0] # structure comply
+
+        filingID=4653
+
+        SCAN_LIMIT = 50
+        print(f"Scanning filingID {filingID}")
+        query_embeddings = calc_embeddings(["who is ceo?"])
+        hits = mv_search_and_query(query_embeddings, expr="filingID == " + str(filingID), limit=SCAN_LIMIT)
+        found_hits_no = len(hits[0])
+        print(hits)
+        if found_hits_no != SCAN_LIMIT:
+            print(f'----- filingID {filingID} has not been found in vector DB, but is in SQL!')
+
+        quit()
+    print('---- scan_vectors complete')
+
 
 ################### EXEC ###################
 
 #res = get_similarities('give me comapany sales per segment', 1528)
 
 #addMV_record(1528, 'ROE (Return on equity) is net income divided by shareholders equity')
+scan_vectors()
+
