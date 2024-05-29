@@ -70,8 +70,6 @@ def get_similarities(question, filingID, limit=13):
     query_embeddings = calc_embeddings([question])
     hits = mv_search_and_query(query_embeddings, expr="filingID == " + str(filingID), limit=limit)
 
-    print('HITS:', hits)
-
     #if True: # debug for distance optimization
         #print('Distances ' + str(hits.distances))
 

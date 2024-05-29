@@ -22,14 +22,17 @@ def scan_vectors():
 
         filingID = filingID[0] # structure comply
 
-        filingID=4653
+        filingID=4663
 
         SCAN_LIMIT = 50
-        print(f"Scanning filingID {filingID}")
+        #print(f"Scanning filingID {filingID}")
         query_embeddings = calc_embeddings(["who is ceo?"])
-        hits = mv_search_and_query(query_embeddings, expr="filingID == " + str(filingID), limit=SCAN_LIMIT)
-        found_hits_no = len(hits[0])
-        print(hits)
+        hits = mv_search_and_query(query_embeddings, expr="filingID == " + str(filingID), limit=SCAN_LIMIT)[0]
+
+        for hit in hits:
+            print('\n\n------------', hit.get('isTranscript'))
+
+        found_hits_no = len(hits)
         if found_hits_no != SCAN_LIMIT:
             print(f'----- filingID {filingID} has not been found in vector DB, but is in SQL!')
 
@@ -43,4 +46,3 @@ def scan_vectors():
 
 #addMV_record(1528, 'ROE (Return on equity) is net income divided by shareholders equity')
 scan_vectors()
-

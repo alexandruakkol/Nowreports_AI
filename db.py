@@ -283,7 +283,7 @@ def mv_search_and_query(search_vectors, search_params=MV_DEF_SEARCH_PARAMS, expr
 
     # Search topK docs based on dense and sparse vectors and rerank with RRF.
     res = collection.hybrid_search([sparse_req, dense_req], rerank=RRFRanker(k=5),
-                            limit=limit, output_fields=['source'])
+                            limit=limit, output_fields=['source', 'isTranscript'])
     #result = collection.search(search_vectors, "embeddings", search_params, limit=limit, output_fields=["source", "filingID"], expr=expr)
     return res
 
