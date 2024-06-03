@@ -96,7 +96,7 @@ def answer_question(messages, filingID):
     finterms = prequery_results[1]
 
     if len(finterms) > 0:
-        limit = 3
+        limit = 5
         finterm_values.append(' Use these figures to calculate the metric the user is asking for.')
     else: limit = 7  #if too large, does not fit into context size
 
