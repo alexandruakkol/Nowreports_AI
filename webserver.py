@@ -45,8 +45,9 @@ def undupe_context_arr(context_arr):
     return res
 
 def preQueryProc(question, filingID):
+    # look for financial terms to pre-fetch them (and calculate if necessary)
     finterms = detect_financial_terms(question)
-    #print('detected finterms: ', finterms)
+    print('finterms:', finterms)
     finterm_values = []
     for finterm in finterms:
         formula_elements = formulas[finterm].split(',')
@@ -75,7 +76,7 @@ def get_similarities(question, filingID, limit=13):
 
     # DISTANCE FILTERING
     #this changes based on reranker k param
-    DISTANCE_THRESHOLD = 0.125
+    DISTANCE_THRESHOLD = 0.1
     context_arr = [{"source":hit.fields["source"], "distance":hit.distance} for hit in hits[0] if hit.distance > DISTANCE_THRESHOLD]
 
     #unduped_context_arr = undupe_context_arr(context_arr)
@@ -96,9 +97,10 @@ def answer_question(messages, filingID):
     finterms = prequery_results[1]
 
     if len(finterms) > 0:
-        limit = 5
+        limit = 7 # to account for the extra 3 finterm matches
+        print('Found finterm')
         finterm_values.append(' Use these figures to calculate the metric the user is asking for.')
-    else: limit = 7  #if too large, does not fit into context size
+    else: limit = 4  #if too large, does not fit into context size
 
     context = get_similarities(question, filingID, limit)
     for finterm_value in finterm_values:
