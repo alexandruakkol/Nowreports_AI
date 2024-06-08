@@ -7,6 +7,10 @@ from mistralai.models.chat_completion import ChatMessage
 import os
 from pymilvus.model.hybrid import BGEM3EmbeddingFunction
 from llama_index.embeddings.openai import OpenAIEmbedding
+import logging
+import boto3
+from botocore.exceptions import ClientError
+import json
 
 api_key = os.environ["MISTRAL_API_KEY"]
 mistral_model = "open-mixtral-8x22b"
@@ -15,7 +19,9 @@ mistral_client = MistralClient(api_key=api_key)
 SYSTEM_PROMPT = {"role": "system",
                  "content": 'You are an AI tool called NowReports that has information about a business, provided in context. answers user questions accurately, based on data from a financial report. The user is a potential investor in the company, so he would want to know the important information, both good and bad, before buying it. Structure your responses into brief, easy to understand points whenever you can. Do not give long answers if not asked to. Never generate tags like [CONTEXT] or [AI] into your response. If asked for a financial metric, or to calculate something, use chain of thought: first find the formula, secondly look into the report for all the necessary data, and then perform the calculation yourself, until you get to the result. Pay attention so that all your calculations are correct and make sense. '''}
 system_prompt_file = open('system_prompt.txt', 'r')
-SYSTEM_PROMPT = {"role": "system", "content": system_prompt_file.read().replace('\n', '')}
+SYSTEM_PROMPT = {"role": "system", "content": system_prompt_file.read().replace('\n', '')} # mistral format
+#SYSTEM_PROMPT = system_prompt_file.read().replace('\n', '') # bedrock / text-only format
+
 print(SYSTEM_PROMPT)
 
 openai_embed_model = OpenAIEmbedding()
@@ -44,7 +50,6 @@ def qa_mixtral(json_messages):
         yield message.choices[0].delta.content
 
     #print(chat_response.choices[0].message.content)
-
 
 # model = INSTRUCTOR('hkunlp/instructor-large')
 # instruction = "Represent the financial report section for retrieving supporting sections: "
@@ -116,3 +121,126 @@ def label_earnings_message(agent, message):
     )
 
     return chat_response.choices[0].message.content
+
+
+
+######################## BEDROCK API ########################
+
+
+
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+"""
+Shows how to use the Converse API to stream a response from Anthropic Claude 3 Sonnet (on demand).
+"""
+
+
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO,
+                    format="%(levelname)s: %(message)s")
+
+model_id = "anthropic.claude-instant-v1"
+
+
+def stream_conversation(bedrock_client,
+                        model_id,
+                        messages,
+                        system_prompts,
+                        inference_config,
+                        additional_model_fields):
+    """
+    Sends messages to a model and streams the response.
+    Args:
+        bedrock_client: The Boto3 Bedrock runtime client.
+        model_id (str): The model ID to use.
+        messages (JSON) : The messages to send.
+        system_prompts (JSON) : The system prompts to send.
+        inference_config (JSON) : The inference configuration to use.
+        additional_model_fields (JSON) : Additional model fields to use.
+
+    Returns:
+        Stream.
+
+    """
+
+    logger.info("Streaming messages with model %s", model_id)
+
+    response = bedrock_client.converse_stream(
+        modelId=model_id,
+        messages=messages,
+        system=system_prompts,
+        inferenceConfig=inference_config,
+        additionalModelRequestFields=additional_model_fields
+    )
+
+    stream = response.get('stream')
+    if stream:
+        for event in stream:
+            if 'messageStart' in event:
+                print(f"\nRole: {event['messageStart']['role']}")
+
+            # this is the main content output
+            if 'contentBlockDelta' in event:
+                #print(event['contentBlockDelta']['delta']['text'], end="")
+                yield event['contentBlockDelta']['delta']['text']
+
+            if 'messageStop' in event:
+                print(f"\nStop reason: {event['messageStop']['stopReason']}")
+
+            if 'metadata' in event:
+                metadata = event['metadata']
+                if 'usage' in metadata:
+                    print("\nToken usage")
+                    print(f"Input tokens: {metadata['usage']['inputTokens']}")
+                    print(
+                        f":Output tokens: {metadata['usage']['outputTokens']}")
+                    print(f":Total tokens: {metadata['usage']['totalTokens']}")
+                if 'metrics' in event['metadata']:
+                    print(
+                        f"Latency: {metadata['metrics']['latencyMs']} milliseconds")
+
+
+def bedrock_qa(json_messages):
+    messages = []
+    for message in json_messages:
+        messages.append({
+            "role": message["role"],
+            "content": [{"text": message["content"]}]
+        })
+
+    if True: # actual prompt logging
+        for message in messages:
+            print_file(message, 'actual_prompt.txt', 'a')
+
+    # System prompts.
+    system_prompts = [{"text": SYSTEM_PROMPT}]
+
+    # inference parameters to use.
+    temperature = 0.5
+    top_k = 200
+    # Base inference parameters.
+    inference_config = {
+        "temperature": temperature
+    }
+    # Additional model inference parameters.
+    #additional_model_fields = {"top_k": top_k}
+    additional_model_fields={}
+    try:
+        bedrock_client = boto3.client(service_name='bedrock-runtime')
+
+        for res in stream_conversation(bedrock_client, model_id, messages,
+                            system_prompts, inference_config, additional_model_fields):
+            yield res
+
+    except ClientError as err:
+        message = err.response['Error']['Message']
+        logger.error("A client error occurred: %s", message)
+        print("A client error occured: " +
+              format(message))
+
+    else:
+        print(
+            f"Finished streaming messages with model {model_id}.")
+
+

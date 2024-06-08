@@ -14,29 +14,30 @@ from ai import openai_embed_model
 TABLE_OVERLAP_PCT = 0.3
 tableparse_model_name = "yolox"
 
+TEXT_LIMIT_CHARS = 100
+
 # paragraphs shorter than this limit get discarded (anti stubs)
 TABLE_DISCARD_LIMIT_CHARS = 150
-TEXT_DISCARD_LIMIT_CHARS = 100
 
 WINDOWS = {
    0: {
-       "CHUNKSIZE": 6000,
-       "SPLITPOINT": 4000
+       "CHUNKSIZE": 1100,
+       "SPLITPOINT": 800
    },
    1: {
-       "CHUNKSIZE": 10000,
-       "SPLITPOINT": 8000
+       "CHUNKSIZE": 2300,
+       "SPLITPOINT": 2100
    }
 }
 
 TABLE_WINDOWS = {
    0: {
-       "CHUNKSIZE": 4500, # max for split tables, chars
-       "SPLITPOINT": 3000 # min for concat text, chars
+       "CHUNKSIZE": 2500, # max for split tables, chars
+       "SPLITPOINT": 2000 # min for concat text, chars
    },
    1: {
-       "CHUNKSIZE": 8000,
-       "SPLITPOINT": 5000
+       "CHUNKSIZE": 5000,
+       "SPLITPOINT": 4000
    }
 }
 
@@ -103,6 +104,13 @@ def process_tables(htmltext):
             strategy = 'hi_res',
             infer_table_structure = True
     )
+    #
+    # with open('logs/queryresults.txt', 'w') as file:
+    #     for element in elements:
+    #         file.write('\n\n')
+    #         file.write(str(element))
+    #
+    # quit()
 
     data = convert_to_dict(elements)
     extracted_elements = []
@@ -114,7 +122,6 @@ def process_tables(htmltext):
         for ix, entry in enumerate(data):
             entry_type = entry["type"]
             entry_text = entry["text"]
-
             if not ix == len(data):
                 next_entry_type = ''
             else: next_entry_type = data[ix+1]["type"]
@@ -130,17 +137,18 @@ def process_tables(htmltext):
 
                 if entry_type == 'Title':
                     current_title = entry_text
-                    continue
 
                 # if the next element is also text, try to cache it
-                if next_entry_type == "NarrativeText" :
+                if next_entry_type in ["NarrativeText", "Title", "UncategorizedText"]:
                     cache = cache + ' ' + entry_text
                     continue
 
-                if len(entry_text) > TEXT_DISCARD_LIMIT_CHARS:
-                    json_string = make_embed_json_string(current_title, entry_text)
-                    extracted_elements.append(json_string)
-                continue
+                if (len(cache) + len(entry_text)) > TEXT_LIMIT_CHARS:
+                    cache = cache + ' ' + entry_text
+                    # json_string = make_embed_json_string(current_title, cache + ' ' + entry_text)
+                    # extracted_elements.append(json_string)
+                    continue
+
 
             ################ ----  table processing ---- ################
             if entry_type == "Table":
@@ -162,11 +170,10 @@ def process_tables(htmltext):
     return filtered_extracted_elements
 
 def semantic_string_split(in_str):
-
     documents = [Document(text=in_str)]
     # decrease breakpoint as much as possible without getting single outlier sentences
     splitter = SemanticSplitterNodeParser(
-        buffer_size=1, breakpoint_percentile_threshold=90, embed_model=openai_embed_model
+        buffer_size=4, breakpoint_percentile_threshold=90, embed_model=openai_embed_model
     )
 
     chunks = splitter.get_nodes_from_documents(documents)

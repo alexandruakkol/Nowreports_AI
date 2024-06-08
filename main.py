@@ -51,6 +51,7 @@ def cleanHTML(text):
 ##_____________________________________________________________________##
 
 def start_transcript_add_pipeline(cik, filing_id):
+
     if not (cik and filing_id):
         return print('No cik/filingID start_transcript_add_pipeline. Very unexpected. To be checked')
 

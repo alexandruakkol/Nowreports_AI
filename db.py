@@ -242,6 +242,10 @@ def mv_get_row_by_filingid(filingid):
   query = 'filingID == ' + str(filingid)
   return collection.query(query, output_fields=["pk"])
 
+def mv_get_row_by_filingid_not_transcript(filingid):
+  query = '(filingID == ' + str(filingid) + ') and (isTranscript == False)'
+  return collection.query(query, output_fields=["pk"])
+
 def mv_query_by_filingid(filingid, output_fields=["source"], save_embedding=False):
   collection.load()
   query = 'filingID == ' + str(filingid)
@@ -314,8 +318,9 @@ def mv_reset_collection():
   mv_create_index(collection, "sparse_vector", "SPARSE_INVERTED_INDEX", "IP")
   mv_create_index(collection, "dense_vector", "FLAT", "L2")
 
-def mv_delete_filingid(filingid):
-  ids = mv_get_row_by_filingid(filingid)
+def mv_delete_filingid(filingid, keepTranscripts=True):
+  if keepTranscripts: ids = mv_get_row_by_filingid_not_transcript(filingid)
+  else: ids = mv_get_row_by_filingid(filingid)
   ids_to_delete = str([str(item["pk"]) for item in ids])
   expr = "pk in " + ids_to_delete
   collection.delete(expr)
@@ -355,7 +360,6 @@ def reset_beta_collection():
 # # iterates through filings and checks if there are Milvus vectors for them
 # def vector_check():
 
-#mv_query_by_filingid(4656, ["sparse_vector"], save_embedding=True) # outputs to file all mv sources
 #ids_to_delete = ['1']  # Rep lace with actual IDs of your vectors
 #print(mv_pg_crosscheck_chunks(1408,147))
 #print(mv_delete_filingid(4))
@@ -366,4 +370,9 @@ def reset_beta_collection():
 #batch_del_filingids([1,2,3,4,5,6])
 #mv_reset_collection()
 #reset_beta_collection()
+#print(mv_delete_filingid(4654))
 
+mv_query_by_filingid(4654, ["source"]) # outputs to file all mv sources
+
+# 1885 MSFT #4654
+# change semantic buffer size from 1 to 4.

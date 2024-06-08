@@ -1,4 +1,4 @@
-from ai import calc_embeddings, qa_mixtral, label_earnings_message
+from ai import calc_embeddings, qa_mixtral, label_earnings_message, bedrock_qa
 from db import mv_search_and_query, print_file, pg_get_injections, mv_check_filingID, mv_query_by_filingid
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
@@ -89,7 +89,7 @@ def get_similarities(question, filingID, limit=13):
     #print('\n------anws', ', '.join(unduped_context_arr))
     return ', '.join(hit_texts)
 
-def answer_question(messages, filingID):
+def answer_question(messages, filingID, isHigherLimit=False):
     print('got question')
     question = messages[-1]["content"]
     prequery_results = preQueryProc(question, filingID) # finds data for formula requirements
@@ -100,7 +100,9 @@ def answer_question(messages, filingID):
         limit = 7 # to account for the extra 3 finterm matches
         print('Found finterm')
         finterm_values.append(' Use these figures to calculate the metric the user is asking for.')
-    else: limit = 4  #if too large, does not fit into context size
+    else: limit = 7  #if too large, does not fit into context size
+
+    if isHigherLimit: limit = 11 # this is set for the AI scan report questions
 
     context = get_similarities(question, filingID, limit)
     for finterm_value in finterm_values:
@@ -121,14 +123,16 @@ CORS(app, origins=["http://localhost:3000", "http://localhost:3001"])
 
 @app.route("/completion", methods=["POST"])
 def handle_completion():
-    if not request.is_json: return jsonify({'error': 'Request does not contain JSON data'}), 400
+    if not request.is_json:
+        return jsonify({'error': 'Request does not contain JSON data'}), 400
 
     try:
         data = request.get_json()
         messages = json.loads(data.get('messages')) # this includes gross prev convos
         filingID = data.get('filingID')
+        isAIReport = data.get('isAIReport')
 
-        answer = answer_question(messages, int(filingID))
+        answer = answer_question(messages, int(filingID), isHigherLimit=isAIReport)
 
         return Response(answer, mimetype='text/event-stream')
     except Exception as e:
@@ -161,3 +165,4 @@ def handle_label_earnings_message():
 
     except Exception as e:
         return jsonify({'error': e}), 400
+
