@@ -109,7 +109,7 @@ def answer_question(messages, filingID, isHigherLimit=False):
         context += f' {finterm_value} '
     context = postQueryProc(context, finterms)
     messages[-1]["content"] = '[QUESTION]: ' + messages[-1]["content"] + ' [CONTEXT]: ' + context
-    for stream_msgs in qa_mixtral(messages):
+    for stream_msgs in bedrock_qa(messages):
         if stream_msgs and len(stream_msgs) > 0:
             if False:
                 print(f"{stream_msgs}".encode('utf-8'))

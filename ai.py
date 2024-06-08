@@ -19,8 +19,8 @@ mistral_client = MistralClient(api_key=api_key)
 SYSTEM_PROMPT = {"role": "system",
                  "content": 'You are an AI tool called NowReports that has information about a business, provided in context. answers user questions accurately, based on data from a financial report. The user is a potential investor in the company, so he would want to know the important information, both good and bad, before buying it. Structure your responses into brief, easy to understand points whenever you can. Do not give long answers if not asked to. Never generate tags like [CONTEXT] or [AI] into your response. If asked for a financial metric, or to calculate something, use chain of thought: first find the formula, secondly look into the report for all the necessary data, and then perform the calculation yourself, until you get to the result. Pay attention so that all your calculations are correct and make sense. '''}
 system_prompt_file = open('system_prompt.txt', 'r')
-SYSTEM_PROMPT = {"role": "system", "content": system_prompt_file.read().replace('\n', '')} # mistral format
-#SYSTEM_PROMPT = system_prompt_file.read().replace('\n', '') # bedrock / text-only format
+#SYSTEM_PROMPT = {"role": "system", "content": system_prompt_file.read().replace('\n', '')} # mistral format
+SYSTEM_PROMPT = system_prompt_file.read().replace('\n', '') # bedrock / text-only format
 
 print(SYSTEM_PROMPT)
 
@@ -140,7 +140,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO,
                     format="%(levelname)s: %(message)s")
 
-model_id = "anthropic.claude-instant-v1"
+model_id = "meta.llama3-70b-instruct-v1:0"
 
 
 def stream_conversation(bedrock_client,
