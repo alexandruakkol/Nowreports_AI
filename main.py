@@ -7,7 +7,7 @@ import json
 
 from parse2 import parse_10k_filing, semantic_string_split
 from bs4 import BeautifulSoup as bs
-from ai import calc_embeddings, label_earnings_message
+from ai import calc_embeddings, label_earnings_message, tag
 from db import (mv_insert_data, mv_search_and_query, pg_pullToEmbed, pg_update_chunks_nr,
                 mv_pg_crosscheck_chunks,pg_reset_chunks_nr, pg_update_modified,mv_delete_filingid, pg_chunks_proc_inprogress, pg_pullTranscripts,
                 pg_pullTranscriptsByCik,
@@ -18,11 +18,13 @@ import traceback
 import time
 import os
 
-#SINGLE_REPORT_MODE = False //TODO this
+################### ------------- PARAMS -------------###################
+#SINGLE_REPORT_MODE = False #TODO this
 TIMER_SWITCH = True
 API_SERVER = 'https://nowreports.com/api/'
 TEST_MODE = False # clears test collection and only pulls AAPL. for testing only!
-
+TRANSCRIPTS_MODE = True #TODO remove prod
+################### ------------- PROGRAM -------------###################
 def debug_print_processed_texts(processed_texts):
     with open('logs/queryresults.txt', 'w') as file:
         for paragraph in processed_texts:
@@ -68,7 +70,6 @@ def start_transcript_add_pipeline(cik, filing_id):
 
     transcript_messages = pg_pullTranscriptMessages(callid)
     transcripts_to_embed = []
-
     # get rid of operator
     transcript_messages = [message for message in transcript_messages if message[1] != 'Operator']
 
@@ -93,9 +94,12 @@ def start_transcript_add_pipeline(cik, filing_id):
                 if len(text) > max:
                     max = len(text)
 
-                message_obj = {"label": label_json['question_subject_summary'], "data": f"{agent}: {text}"}
-                transcripts_to_embed.append(json.dumps(message_obj))
+                # generate AI tags
+                tags = tag(text)
 
+                message_obj = {"label": label_json['question_subject_summary'], "tags": str(tags), "data": f"{agent}: {text}"}
+                transcripts_to_embed.append(json.dumps(message_obj))
+                print('embedded transcript:', message_obj)
             #print('--- Max transcript chunk: ', max)
 
         except Exception as _:
@@ -131,13 +135,9 @@ def start_filing_proc_pipeline(toEmbed):
         pg_chunks_proc_inprogress(filing_id)
         print('Processing filingID ' + filing_id_str)
 
-
-        # processed_texts contain HTML tables (for source)
+        # processed_texts = full HTML tables (for structure)
+        # matching_texts = text without HTML
         processed_texts = parse_10k_filing(fullreport)
-
-        if False:  # TODO: debug mech for source (HTML) texts
-            debug_print_processed_texts(processed_texts)
-            quit()
 
         processed_texts_no = len(processed_texts)
         if (processed_texts_no is None) or (processed_texts_no == 0): raise ValueError('zero processed_texts_no')
@@ -149,7 +149,23 @@ def start_filing_proc_pipeline(toEmbed):
             debug_print_processed_texts(matching_texts)
             quit()
 
-        print('---- Parsing OK ' + filing_id_str)
+        # tag the text
+        for i in range(len(matching_texts)):
+            try:
+                j_matchingText = json.loads(matching_texts[i])
+                # if text is too short, skip tagging, doesn't work that well
+                if(len(j_matchingText['data']) < 350): continue
+
+                tags = tag(matching_texts[i])
+                j_text = json.loads(processed_texts[i])
+                j_text['tags'] = str(tags)
+                processed_texts[i] = json.dumps(j_text).replace('[','').replace(']','').replace("'",'').replace('\\','')
+            except Exception as e:
+                print('Error on tagging text', e)
+                continue
+
+        # generate AI tags as embedding metadata
+
         filingIDs = []
         falses = []  # list of 0s for isTranscript
 
@@ -191,8 +207,8 @@ def start_filing_proc_pipeline(toEmbed):
         pg_update_modified(filing_id)
 
         # -----------------------  TRANSCRIPTS ADD TO EMBED  ------------------------
-
-        start_transcript_add_pipeline(cik, filing_id)
+        if TRANSCRIPTS_MODE:
+            start_transcript_add_pipeline(cik, filing_id)
 
         if TIMER_SWITCH: toc = time.perf_counter()
         if TIMER_SWITCH:
@@ -233,23 +249,9 @@ def update_embeddings_with_transcripts():
         print('---- ADDED TRANSCRIPTS TO ' + last_filing_id)
 
 
-# mv_query_by_filingid(4653, ["source", "isTranscript"])  # outputs to file all mv sources
-# quit()
-
 if TEST_MODE:
     print('TEST PULL MODE (just AAPL)')
     start_test_pull()
-    #mv_delete_transcript_embeddings(4654)
-    #mv_query_by_filingid(4653, ["source"])  # outputs to file all mv sources
-    #update_embeddings_with_transcripts()
-    #quit()
-    #
-    # start_transcript_add_pipeline('789019', 4654)
-    #
-    # mv_query_by_filingid(4654, ["source", "isTranscript"])  # outputs to file all mv sources
-    #
-    # mv_reset_test_collection()
-    # mv_query_by_filingid(4654, ["isTranscript"])  # outputs to file all mv sources
 
     SOUND_FILEPATH = 'ding.mp3'
     os.system(f"afplay {SOUND_FILEPATH}")

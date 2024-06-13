@@ -18,7 +18,7 @@ connections.connect(
 print("Connection to Milvus established successfully.")
 
 try:
-  collection = Collection('nowreports_beta') # nowreports_bge | test | nowreports_beta
+  collection = Collection('nowreports_meta') # nowreports_bge | test | nowreports_beta
   print(collection)
   collection.load()
 except Exception as e:
@@ -229,6 +229,26 @@ def mv_create_beta_collection():
   print('Collection created: ', collection)
   return collection
 
+def mv_create_meta_collection():
+  from pymilvus.model.hybrid import BGEM3EmbeddingFunction
+
+  ef = BGEM3EmbeddingFunction(use_fp16=False, device="cpu")
+  dense_dim = ef.dim["dense"]
+
+  fields = [
+    FieldSchema(name="pk", dtype=DataType.VARCHAR, is_primary=True, auto_id=True, max_length=100),
+    FieldSchema(name="filingID", dtype=DataType.INT64),
+    FieldSchema(name="source", dtype=DataType.VARCHAR, max_length=65535),
+    FieldSchema(name="sparse_vector", dtype=DataType.SPARSE_FLOAT_VECTOR),
+    FieldSchema(name="dense_vector", dtype=DataType.FLOAT_VECTOR,
+                dim=dense_dim),
+    FieldSchema(name="isTranscript", dtype=DataType.BOOL)
+  ]
+
+  collection = mv_create_collection("nowreports_meta", fields, "meta collection")
+  print('Collection created: ', collection)
+  return collection
+
 def mv_check_filingID(filingID):
   dir = f'test_data/test_vector_{EMBEDDING_SIZE}'
   if('--wdir' in sys.argv): dir = '/home/alexandru/Desktop/nowreports_ai/' + dir
@@ -357,6 +377,13 @@ def reset_beta_collection():
   mv_create_index(collection, "dense_vector", "FLAT", "L2")
   collection.load()
 
+def reset_meta_collection():
+  mv_drop_collection('nowreports_meta')
+  mv_create_meta_collection()
+  mv_create_index(collection, "sparse_vector", "SPARSE_INVERTED_INDEX", "IP")
+  mv_create_index(collection, "dense_vector", "FLAT", "L2")
+  collection.load()
+
 # # iterates through filings and checks if there are Milvus vectors for them
 # def vector_check():
 
@@ -373,6 +400,6 @@ def reset_beta_collection():
 #print(mv_delete_filingid(4654))
 
 mv_query_by_filingid(4654, ["source"]) # outputs to file all mv sources
-
+# reset_meta_collection()
 # 1885 MSFT #4654
 # change semantic buffer size from 1 to 4.

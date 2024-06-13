@@ -11,6 +11,7 @@ import logging
 import boto3
 from botocore.exceptions import ClientError
 import json
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 api_key = os.environ["MISTRAL_API_KEY"]
 mistral_model = "open-mixtral-8x22b"
@@ -84,6 +85,7 @@ def qa(messages):
 
     stream = llm_client.chat.completions.create(
         model="gpt-3.5-turbo-1106",
+        #model="gpt-4o-2024-05-13",
         messages=messages,
         max_tokens=300,
         stream=True,
@@ -243,4 +245,15 @@ def bedrock_qa(json_messages):
         print(
             f"Finished streaming messages with model {model_id}.")
 
+######################## Financial keyword tagging ########################
+tag_tokenizer = AutoTokenizer.from_pretrained("bloomberg/KeyBART")
+tag_model = AutoModelForSeq2SeqLM.from_pretrained("bloomberg/KeyBART")
 
+def tag(text):
+    inputs = tag_tokenizer([text], max_length=1024, return_tensors="pt")
+    summary_ids = tag_model.generate(inputs["input_ids"])
+    keywords = tag_tokenizer.batch_decode(summary_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
+
+    keywords = keywords[0].split(';')
+
+    return [item for item in keywords if not item.endswith('-') and len(item) > 1]

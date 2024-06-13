@@ -42,21 +42,21 @@ TABLE_WINDOWS = {
 }
 
 def parse_10k_filing(raw_10k):
-   doc_start_pattern = re.compile(r'<DOCUMENT>')
-   doc_end_pattern = re.compile(r'</DOCUMENT>')
-   type_pattern = re.compile(r'<TYPE>[^\n]+')
+    doc_start_pattern = re.compile(r'<DOCUMENT>')
+    doc_end_pattern = re.compile(r'</DOCUMENT>')
+    type_pattern = re.compile(r'<TYPE>[^\n]+')
 
-   doc_start_is = [x.end() for x in doc_start_pattern.finditer(raw_10k)]
-   doc_end_is = [x.start() for x in doc_end_pattern.finditer(raw_10k)]
+    doc_start_is = [x.end() for x in doc_start_pattern.finditer(raw_10k)]
+    doc_end_is = [x.start() for x in doc_end_pattern.finditer(raw_10k)]
 
-   doc_types = [x[len('<TYPE>'):] for x in type_pattern.findall(raw_10k)]
-   document = {}
+    doc_types = [x[len('<TYPE>'):] for x in type_pattern.findall(raw_10k)]
+    document = {}
 
-   for doc_type, doc_start, doc_end in zip(doc_types, doc_start_is, doc_end_is):
-       if doc_type == '10-K':
+    for doc_type, doc_start, doc_end in zip(doc_types, doc_start_is, doc_end_is):
+        if doc_type == '10-K':
            document[doc_type] = raw_10k[doc_start:doc_end]
 
-   def remove_attributes(soup_element):
+    def remove_attributes(soup_element):
        attr_blacklist = ['style','id','class','contextref','decimals','format','name','scale']
        if isinstance(soup_element, Tag):
            soup_element.attrs = {key: value for key, value in soup_element.attrs.items() if key not in attr_blacklist}
@@ -64,23 +64,23 @@ def parse_10k_filing(raw_10k):
                remove_attributes(child)
        return soup_element
 
-   def processElements(elem):
+    def processElements(elem):
        if not hasattr(elem ,'body'): return []
        processed_elements = process_tables(str(elem.body))
 
        return processed_elements
 
-   processed_items = []
+    processed_items = []
 
-   bs_html = bs(document['10-K'], 'lxml')
-   ee = processElements(bs_html.html)
+    bs_html = bs(document['10-K'], 'lxml')
+    ee = processElements(bs_html.html)
 
-   processed_items.extend(ee)
+    processed_items.extend(ee)
 
-   # flatten
-   processed_texts = processed_items
+    # flatten
+    processed_texts = processed_items
 
-   return processed_texts
+    return processed_texts
 
 ####################################### TABLE PARSING ###################################################
 

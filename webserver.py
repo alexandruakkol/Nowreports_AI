@@ -1,4 +1,4 @@
-from ai import calc_embeddings, qa_mixtral, label_earnings_message, bedrock_qa
+from ai import calc_embeddings, qa_mixtral, label_earnings_message, bedrock_qa, qa, tag
 from db import mv_search_and_query, print_file, pg_get_injections, mv_check_filingID, mv_query_by_filingid
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
@@ -103,13 +103,12 @@ def answer_question(messages, filingID, isHigherLimit=False):
     else: limit = 7  #if too large, does not fit into context size
 
     if isHigherLimit: limit = 11 # this is set for the AI scan report questions
-
     context = get_similarities(question, filingID, limit)
     for finterm_value in finterm_values:
         context += f' {finterm_value} '
     context = postQueryProc(context, finterms)
     messages[-1]["content"] = '[QUESTION]: ' + messages[-1]["content"] + ' [CONTEXT]: ' + context
-    for stream_msgs in qa_mixtral(messages):
+    for stream_msgs in qa(messages):
         if stream_msgs and len(stream_msgs) > 0:
             if False:
                 print(f"{stream_msgs}".encode('utf-8'))
