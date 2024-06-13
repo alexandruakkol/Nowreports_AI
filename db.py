@@ -18,7 +18,7 @@ connections.connect(
 print("Connection to Milvus established successfully.")
 
 try:
-  collection = Collection('nowreports_beta') # nowreports_bge | test | nowreports_beta
+  collection = Collection('nowreports_meta') # nowreports_bge | test | nowreports_beta
   print(collection)
   collection.load()
 except Exception as e:
@@ -54,11 +54,16 @@ def print_file(txt, filename='printfile_out.txt', typ='w'):
 
 def pg_pullToEmbed():
   query = '''
-    select f.id, f.addr, f.cik
-    from filings f
-    join companies c on f.cik=c.cik
-    where chunks is null and c.mcap is not null
-    order by c.mcap desc --offset 200
+    SELECT f.id, f.addr, f.cik
+    FROM filings f
+    JOIN (
+        SELECT MAX(ff.id) AS last_filing
+        FROM filings ff
+        join companies c on ff.cik=c.cik
+        GROUP BY c.cik
+    ) AS last_filings
+    ON f.id = last_filings.last_filing AND f.id = last_filings.last_filing
+    where f.chunks is null
   '''
   return sql.run(query)
 
@@ -372,7 +377,7 @@ def reset_beta_collection():
 #reset_beta_collection()
 #print(mv_delete_filingid(4654))
 
-mv_query_by_filingid(4654, ["source"]) # outputs to file all mv sources
+mv_query_by_filingid(4654, ["source"]) # outputs to file all mv sources 1515
 
 # 1885 MSFT #4654
 # change semantic buffer size from 1 to 4.
