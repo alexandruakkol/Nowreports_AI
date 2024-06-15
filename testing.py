@@ -21,22 +21,20 @@ def scan_vectors():
     for filingID in ids:
 
         filingID = filingID[0] # structure comply
-
-        filingID=4663
-
         SCAN_LIMIT = 50
-        #print(f"Scanning filingID {filingID}")
         query_embeddings = calc_embeddings(["who is ceo?"])
         hits = mv_search_and_query(query_embeddings, expr="filingID == " + str(filingID), limit=SCAN_LIMIT)[0]
 
-        for hit in hits:
-            print('\n\n------------', hit.get('isTranscript'))
+        no_transcript_hits = []
 
-        found_hits_no = len(hits)
-        if found_hits_no != SCAN_LIMIT:
+        for hit in hits:
+            if not hit.get('isTranscript'): no_transcript_hits.append(hit)
+
+        found_hits_no = len(no_transcript_hits)
+
+        if found_hits_no < SCAN_LIMIT:
             print(f'----- filingID {filingID} has not been found in vector DB, but is in SQL!')
 
-        quit()
     print('---- scan_vectors complete')
 
 

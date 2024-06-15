@@ -76,6 +76,7 @@ def calc_embeddings(data):
     # return model.encode([data], normalize_embeddings=True)
 
 def qa(messages):
+    #print_file(messages, 'tt.txt', 'a')
     messages.insert(0, SYSTEM_PROMPT)
 
     if True: # actual prompt logging
@@ -85,7 +86,7 @@ def qa(messages):
     stream = llm_client.chat.completions.create(
         model="gpt-3.5-turbo-1106",
         messages=messages,
-        max_tokens=300,
+        #max_tokens=300,
         stream=True,
         temperature=0.3
         # frequency_penalty=0.5,

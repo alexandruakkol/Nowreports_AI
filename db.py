@@ -54,16 +54,18 @@ def print_file(txt, filename='printfile_out.txt', typ='w'):
 
 def pg_pullToEmbed():
   query = '''
-    SELECT f.id, f.addr, f.cik
+    SELECT f.id, f.addr, f.cik, mcap
     FROM filings f
     JOIN (
-        SELECT MAX(ff.id) AS last_filing
+        SELECT MAX(ff.id) AS last_filing, mcap
         FROM filings ff
         join companies c on ff.cik=c.cik
-        GROUP BY c.cik
+        where mcap is not null
+        GROUP BY c.cik, c.mcap
     ) AS last_filings
     ON f.id = last_filings.last_filing AND f.id = last_filings.last_filing
     where f.chunks is null
+    order by last_filings.mcap desc
   '''
   return sql.run(query)
 
@@ -377,7 +379,7 @@ def reset_beta_collection():
 #reset_beta_collection()
 #print(mv_delete_filingid(4654))
 
-mv_query_by_filingid(4654, ["source"]) # outputs to file all mv sources 1515
+#mv_query_by_filingid(4663, ["source"]) # outputs to file all mv sources 1515
 
 # 1885 MSFT #4654
 # change semantic buffer size from 1 to 4.

@@ -1,4 +1,4 @@
-from ai import calc_embeddings, qa_mixtral, label_earnings_message, bedrock_qa
+from ai import calc_embeddings, qa_mixtral, label_earnings_message, bedrock_qa, qa
 from db import mv_search_and_query, print_file, pg_get_injections, mv_check_filingID, mv_query_by_filingid
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
@@ -109,7 +109,7 @@ def answer_question(messages, filingID, isHigherLimit=False):
         context += f' {finterm_value} '
     context = postQueryProc(context, finterms)
     messages[-1]["content"] = '[QUESTION]: ' + messages[-1]["content"] + ' [CONTEXT]: ' + context
-    for stream_msgs in qa_mixtral(messages):
+    for stream_msgs in qa(messages):
         if stream_msgs and len(stream_msgs) > 0:
             if False:
                 print(f"{stream_msgs}".encode('utf-8'))
