@@ -47,7 +47,7 @@ def undupe_context_arr(context_arr):
 def preQueryProc(question, filingID):
     # look for financial terms to pre-fetch them (and calculate if necessary)
     finterms = detect_financial_terms(question)
-    print('finterms:', finterms)
+    # print('finterms:', finterms)
     finterm_values = []
     for finterm in finterms:
         formula_elements = formulas[finterm].split(',')
@@ -89,8 +89,8 @@ def get_similarities(question, filingID, limit=13):
     #print('\n------anws', ', '.join(unduped_context_arr))
     return ', '.join(hit_texts)
 
-def answer_question(messages, filingID, isHigherLimit=False):
-    print('got question')
+def answer_question(messages, filingID, isAIReport=False):
+    # print('got question')
     question = messages[-1]["content"]
     prequery_results = preQueryProc(question, filingID) # finds data for formula requirements
     finterm_values = prequery_results[0]
@@ -102,14 +102,20 @@ def answer_question(messages, filingID, isHigherLimit=False):
         finterm_values.append(' Use these figures to calculate the metric the user is asking for.')
     else: limit = 7  #if too large, does not fit into context size
 
-    if isHigherLimit: limit = 11 # this is set for the AI scan report questions
+    if isAIReport: limit = 11 # this is set for the AI scan report questions
 
     context = get_similarities(question, filingID, limit)
     for finterm_value in finterm_values:
         context += f' {finterm_value} '
     context = postQueryProc(context, finterms)
-    messages[-1]["content"] = '[QUESTION]: ' + messages[-1]["content"] + ' [CONTEXT]: ' + context
-    for stream_msgs in qa(messages):
+    messages[-1]["content"] = '[QUESTION]: ' + messages[-1]["content"] + '\n [CONTEXT]: ' + context
+
+    if isAIReport:
+        stream_obj = qa(messages, o3=True)
+    else:
+        stream_obj = qa(messages)
+
+    for stream_msgs in stream_obj:
         if stream_msgs and len(stream_msgs) > 0:
             if False:
                 print(f"{stream_msgs}".encode('utf-8'))
@@ -132,7 +138,7 @@ def handle_completion():
         filingID = data.get('filingID')
         isAIReport = data.get('isAIReport')
 
-        answer = answer_question(messages, int(filingID), isHigherLimit=isAIReport)
+        answer = answer_question(messages, int(filingID), isAIReport=isAIReport)
 
         return Response(answer, mimetype='text/event-stream')
     except Exception as e:

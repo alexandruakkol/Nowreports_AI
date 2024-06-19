@@ -20,9 +20,14 @@ SYSTEM_PROMPT = {"role": "system",
                  "content": 'You are an AI tool called NowReports that has information about a business, provided in context. answers user questions accurately, based on data from a financial report. The user is a potential investor in the company, so he would want to know the important information, both good and bad, before buying it. Structure your responses into brief, easy to understand points whenever you can. Do not give long answers if not asked to. Never generate tags like [CONTEXT] or [AI] into your response. If asked for a financial metric, or to calculate something, use chain of thought: first find the formula, secondly look into the report for all the necessary data, and then perform the calculation yourself, until you get to the result. Pay attention so that all your calculations are correct and make sense. '''}
 system_prompt_file = open('system_prompt.txt', 'r')
 SYSTEM_PROMPT = {"role": "system", "content": system_prompt_file.read().replace('\n', '')} # mistral format
-#SYSTEM_PROMPT = system_prompt_file.read().replace('\n', '') # bedrock / text-only format
 
-print(SYSTEM_PROMPT)
+SYSTEM_PROMPT_O3 = {"role": "system",
+                 "content": '''\nTask: Answer the [QUESTION] using the data from the [CONTEXT], briefly.
+                \nRole: You are an executive at a corporation responsible for fairly and briefly answering to your shareholders and their concerns.
+                \nBehavior: Do not cite sources. If exact data cannot be found in context, say so.
+                \nTechnique: If the task is complex, split it into subtasks. Always run a math check to ensure accurate results.'''}
+
+#SYSTEM_PROMPT = system_prompt_file.read().replace('\n', '') # bedrock / text-only format
 
 openai_embed_model = OpenAIEmbedding()
 
@@ -53,7 +58,7 @@ def qa_mixtral(json_messages):
 
 # model = INSTRUCTOR('hkunlp/instructor-large')
 # instruction = "Represent the financial report section for retrieving supporting sections: "
-tokenizer = AutoTokenizer.from_pretrained('alexakkol/BAAI-bge-base-en-nowr-1-2')
+#tokenizer = AutoTokenizer.from_pretrained('alexakkol/BAAI-bge-base-en-nowr-1-2')
 
 #for GPT tokenization
 openai_tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
@@ -75,16 +80,26 @@ def calc_embeddings(data):
     return ef(data)
     # return model.encode([data], normalize_embeddings=True)
 
-def qa(messages):
-    #print_file(messages, 'tt.txt', 'a')
-    messages.insert(0, SYSTEM_PROMPT)
+def qa(messages, o3=False):
+
+    if o3:
+        model = "gpt-3.5-turbo"
+        messages.insert(0, SYSTEM_PROMPT_O3)
+
+    else:
+        model = "gpt-4"
+        messages.insert(0, SYSTEM_PROMPT)
+
+    print_file(messages, 'tt.txt', 'a')
+
 
     if True: # actual prompt logging
+        print_file('\n-------------------\n', 'actual_prompt.txt', 'a')
         for message in messages:
             print_file(message, 'actual_prompt.txt', 'a')
 
     stream = llm_client.chat.completions.create(
-        model="gpt-3.5-turbo-1106",
+        model=model,
         messages=messages,
         #max_tokens=300,
         stream=True,
