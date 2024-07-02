@@ -89,12 +89,15 @@ def get_similarities(question, filingID, limit=13):
     #print('\n------anws', ', '.join(unduped_context_arr))
     return ', '.join(hit_texts)
 
-def answer_question(messages, filingID, isAIReport=False):
-    # print('got question')
+def answer_question(messages, filingID,  symbol='', isAIReport=False):
     question = messages[-1]["content"]
     prequery_results = preQueryProc(question, filingID) # finds data for formula requirements
     finterm_values = prequery_results[0]
     finterms = prequery_results[1]
+
+    symbol_str = ''
+    if len(symbol):
+        symbol_str = f'({symbol})'
 
     if len(finterms) > 0:
         limit = 7 # to account for the extra 3 finterm matches
@@ -108,7 +111,7 @@ def answer_question(messages, filingID, isAIReport=False):
     for finterm_value in finterm_values:
         context += f' {finterm_value} '
     context = postQueryProc(context, finterms)
-    messages[-1]["content"] = '[QUESTION]: ' + messages[-1]["content"] + '\n [CONTEXT]: ' + context
+    messages[-1]["content"] = '[QUESTION]: use the browser to tell me: ' + messages[-1]["content"] + ' ' + symbol_str + '\n [CONTEXT]: ' + context
 
     if isAIReport:
         stream_obj = qa(messages, o3=True)
@@ -134,11 +137,13 @@ def handle_completion():
 
     try:
         data = request.get_json()
+
         messages = json.loads(data.get('messages')) # this includes gross prev convos
+        symbol = data.get('symbol')
         filingID = data.get('filingID')
         isAIReport = data.get('isAIReport')
 
-        answer = answer_question(messages, int(filingID), isAIReport=isAIReport)
+        answer = answer_question(messages, int(filingID), symbol=symbol, isAIReport=isAIReport)
 
         return Response(answer, mimetype='text/event-stream')
     except Exception as e:
