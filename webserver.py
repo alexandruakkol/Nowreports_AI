@@ -89,14 +89,14 @@ def get_similarities(question, filingID, limit=13):
     #print('\n------anws', ', '.join(unduped_context_arr))
     return ', '.join(hit_texts)
 
-def answer_question(messages, filingID,  symbol='', isAIReport=False):
+def answer_question(messages, filingID, symbol, isAIReport=False):
     question = messages[-1]["content"]
     prequery_results = preQueryProc(question, filingID) # finds data for formula requirements
     finterm_values = prequery_results[0]
     finterms = prequery_results[1]
 
     symbol_str = ''
-    if len(symbol):
+    if symbol:
         symbol_str = f'({symbol})'
 
     if len(finterms) > 0:
