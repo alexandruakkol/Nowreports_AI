@@ -38,3 +38,4 @@ The availability and performance of the webserver, Milvus vector database (on Do
 
 Hybrid retrieval and switch to a finetuned bge-m3 embedding model are in the testing phase. Large improvements in AI performance are on their way.
 
+
