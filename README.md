@@ -23,7 +23,7 @@ The availability and performance of the webserver, Milvus vector database (on Do
 ## Models Used
 
 - Mixtral 8x7b as the client-facing question-answering LLM. Runs via Mixtral AI API.
-- alexakkol/BAAI-bge-base-en-nowr-1-2 (on Hugging Face) for embeddings generation. Fine-tuned by myself with financial data and synthetic data generation. Runs locally.
+- alexakkol/BAAI-bge-base-en-nowr-1-2 (on Hugging Face) for embeddings generation. Fine-tuned locally with financial data and synthetic data generation.
 - gpt-3.5-turbo-1106 for synthetic training data generation for the embedding model.
 
 ## Files
